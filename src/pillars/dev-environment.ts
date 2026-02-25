@@ -4,6 +4,7 @@ import {
   readFileContent,
   packageJsonHas,
 } from "./utils.js";
+import fg from "fast-glob";
 
 const devEnvironment: Pillar = {
   id: "dev-environment",
@@ -33,6 +34,10 @@ const devEnvironment: Pillar = {
           "Cargo.lock",
           "gradle.lockfile",
           "gradle/verification-metadata.xml",
+          "packages.lock.json",
+          "Gemfile.lock",
+          "composer.lock",
+          "Package.resolved",
         );
         if (found) {
           return {
@@ -170,6 +175,26 @@ const devEnvironment: Pillar = {
           };
         }
 
+        // Check for .sln file (implies dotnet build)
+        const slnFiles = await fg("*.sln", { cwd: repoPath, absolute: false, deep: 1 });
+        if (slnFiles.length > 0) {
+          return {
+            criterionId: "setup-script",
+            pass: true,
+            message: "Solution file found (provides dotnet build/run)",
+          };
+        }
+
+        // Check for Rakefile (Ruby setup mechanism)
+        const rakefileSetup = await fileExists(repoPath, "Rakefile");
+        if (rakefileSetup) {
+          return {
+            criterionId: "setup-script",
+            pass: true,
+            message: "Rakefile found as setup mechanism",
+          };
+        }
+
         // Check package.json for "dev" script
         const hasDevScript = await packageJsonHas(repoPath, "scripts.dev");
         if (hasDevScript) {
@@ -211,6 +236,10 @@ const devEnvironment: Pillar = {
           "gradle.properties",
           "rust-toolchain.toml",
           "rust-toolchain",
+          ".ruby-version",
+          ".php-version",
+          ".swift-version",
+          "global.json",
         );
         if (found) {
           return {

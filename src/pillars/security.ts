@@ -144,12 +144,51 @@ const security: Pillar = {
           }
         }
 
+        // Check .csproj files for C# security analyzers
+        const csprojSecFiles = await fg("**/*.csproj", { cwd: repoPath, absolute: false, ignore: ["node_modules/**", "vendor/**"] });
+        for (const csproj of csprojSecFiles) {
+          const csprojContent = await readFileContent(repoPath, csproj);
+          if (csprojContent && (
+            csprojContent.includes("Microsoft.CodeAnalysis.NetAnalyzers") ||
+            csprojContent.includes("SecurityCodeScan")
+          )) {
+            return {
+              criterionId: "security-scanning",
+              pass: true,
+              message: `C# security analyzer found in ${csproj}`,
+            };
+          }
+        }
+
+        // Check Gemfile for Ruby security tools (brakeman, bundler-audit)
+        const gemfileSec = await readFileContent(repoPath, "Gemfile");
+        if (gemfileSec && (gemfileSec.includes("brakeman") || gemfileSec.includes("bundler-audit"))) {
+          return {
+            criterionId: "security-scanning",
+            pass: true,
+            message: "Ruby security scanning tool found in Gemfile",
+          };
+        }
+
+        // Check composer.json for PHP security tools
+        const composerSec = await readFileContent(repoPath, "composer.json");
+        if (composerSec && (
+          composerSec.includes("roave/security-advisories") ||
+          composerSec.includes("enlightn/security-checker")
+        )) {
+          return {
+            criterionId: "security-scanning",
+            pass: true,
+            message: "PHP security scanning tool found in composer.json",
+          };
+        }
+
         return {
           criterionId: "security-scanning",
           pass: false,
           message: "No security scanning configured in CI.",
           details:
-            "Add CodeQL, Snyk, Trivy, Semgrep, OWASP dependency-check, or cargo-audit to your CI pipeline for vulnerability scanning.",
+            "Add CodeQL, Snyk, Trivy, Semgrep, OWASP dependency-check, cargo-audit, brakeman, bundler-audit, or SecurityCodeScan to your CI pipeline for vulnerability scanning.",
         };
       },
     },

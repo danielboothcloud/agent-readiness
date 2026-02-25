@@ -5,6 +5,7 @@ import {
   getFileMtimeMs,
   packageJsonHas,
 } from "./utils.js";
+import fg from "fast-glob";
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
@@ -37,6 +38,10 @@ const codeHealth: Pillar = {
           "Pipfile.lock",
           "go.sum",
           "Cargo.lock",
+          "packages.lock.json",
+          "Gemfile.lock",
+          "composer.lock",
+          "Package.resolved",
         ];
 
         for (const lockFile of lockFiles) {
@@ -73,6 +78,10 @@ const codeHealth: Pillar = {
           "pyproject.toml",
           "go.mod",
           "Cargo.toml",
+          "*.csproj",
+          "Gemfile",
+          "composer.json",
+          "Package.swift",
         );
         if (!hasProjectFile) {
           return {
@@ -177,6 +186,39 @@ const codeHealth: Pillar = {
             criterionId: "dead-code-detection",
             pass: true,
             message: "cargo-udeps configured in Cargo.toml",
+          };
+        }
+
+        // Check .csproj files for C# Roslynator (dead code detection)
+        const csprojDCFiles = await fg("**/*.csproj", { cwd: repoPath, absolute: false, ignore: ["node_modules/**", "vendor/**"] });
+        for (const csproj of csprojDCFiles) {
+          const csprojContent = await readFileContent(repoPath, csproj);
+          if (csprojContent && csprojContent.includes("Roslynator")) {
+            return {
+              criterionId: "dead-code-detection",
+              pass: true,
+              message: `Roslynator dead code analysis found in ${csproj}`,
+            };
+          }
+        }
+
+        // Check Gemfile for Ruby dead code tools (debride, reek)
+        const gemfileDC = await readFileContent(repoPath, "Gemfile");
+        if (gemfileDC && (gemfileDC.includes("debride") || gemfileDC.includes("reek"))) {
+          return {
+            criterionId: "dead-code-detection",
+            pass: true,
+            message: "Ruby dead code detection tool found in Gemfile",
+          };
+        }
+
+        // Check composer.json for PHP Mess Detector (phpmd)
+        const composerDC = await readFileContent(repoPath, "composer.json");
+        if (composerDC && composerDC.includes("phpmd")) {
+          return {
+            criterionId: "dead-code-detection",
+            pass: true,
+            message: "PHP Mess Detector (PHPMD) found in composer.json",
           };
         }
 
