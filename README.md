@@ -66,7 +66,7 @@ Repos with clear conventions, solid test suites, good documentation, and consist
 | **Data privacy** | Your code never leaves your machine | Sent to their servers |
 | **Customizable** | Fully configurable via `.kodus-readiness.yml` | Limited |
 | **CI/CD integration** | `--ci` + `--min-level` flags | API only |
-| **Languages** | Node, Python, Go, Rust, Java, Kotlin | Limited |
+| **Languages** | Node, Python, Go, Rust, Java, Kotlin, C#, Ruby, PHP, Swift | Limited |
 
 ---
 
@@ -76,7 +76,7 @@ Repos with clear conventions, solid test suites, good documentation, and consist
 - **5 maturity levels** from Foundational to Autonomous
 - **Interactive web dashboard** with radar charts and detailed breakdowns
 - **AI-powered analysis** (optional) via `--ai` flag for deeper code evaluation
-- **Multi-language support**: Node.js, Python, Go, Rust, Java, Kotlin
+- **Multi-language support**: Node.js, Python, Go, Rust, Java, Kotlin, C#/.NET, Ruby, PHP, Swift
 - **Monorepo detection**: npm/yarn/pnpm workspaces, Lerna, Nx, Turborepo
 - **CI/CD gates** with `--ci` and `--min-level` for quality enforcement
 - **Fully configurable** via `.kodus-readiness.yml`
@@ -366,9 +366,9 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 | Criterion | Level | AI | What It Detects |
 |---|---|---|---|
 | `editorconfig` | 1 | No | `.editorconfig` file |
-| `linter` | 2 | No | ESLint, Biome, Ruff, golangci-lint, detekt, ktlint, Checkstyle, PMD, SpotBugs, clippy |
-| `formatter` | 2 | No | Prettier, Biome, Black, Ruff, gofmt, ktlint, ktfmt, Spotless, google-java-format, rustfmt |
-| `type-checker` | 3 | No | TypeScript strict, mypy, pyright, Kotlin/Go/Java/Rust (built-in static types) |
+| `linter` | 2 | No | ESLint, Biome, Ruff, golangci-lint, detekt, ktlint, Checkstyle, PMD, SpotBugs, clippy, StyleCop, Roslyn analyzers, RuboCop, PHPStan, Psalm, PHP_CodeSniffer, SwiftLint |
+| `formatter` | 2 | No | Prettier, Biome, Black, Ruff, gofmt, ktlint, ktfmt, Spotless, google-java-format, rustfmt, dotnet format (built-in), RuboCop, PHP-CS-Fixer, SwiftFormat |
+| `type-checker` | 3 | No | TypeScript strict, mypy, pyright, Kotlin/Go/Java/Rust/C#/Swift (built-in static types) |
 | `pre-commit-hooks` | 3 | No | Husky, Lefthook, pre-commit, lint-staged |
 | `naming-conventions` | 5 | Yes | File/function naming patterns and consistency |
 
@@ -376,10 +376,10 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 
 | Criterion | Level | AI | What It Detects |
 |---|---|---|---|
-| `test-framework` | 2 | No | Jest, Vitest, pytest, Go test, JUnit, TestNG, Kotest, Rust #[test] |
-| `test-files-exist` | 2 | No | `*.test.*`, `*.spec.*`, `test_*.py`, `*_test.go`, `*Test.kt`, `*Test.java`, `tests/*.rs` |
-| `test-script` | 2 | No | package.json, Makefile, Gradle, Maven, Cargo |
-| `coverage-config` | 4 | No | nyc, Jest, Vitest, .coveragerc, JaCoCo, Kover, tarpaulin, cargo-llvm-cov |
+| `test-framework` | 2 | No | Jest, Vitest, pytest, Go test, JUnit, TestNG, Kotest, Rust #[test], xUnit/NUnit/MSTest, RSpec, Minitest, PHPUnit, XCTest |
+| `test-files-exist` | 2 | No | `*.test.*`, `*.spec.*`, `test_*.py`, `*_test.go`, `*Test.kt`, `*Test.java`, `tests/*.rs`, `*Test.cs`, `*_spec.rb`, `*Test.php`, `*Tests.swift` |
+| `test-script` | 2 | No | package.json, Makefile, Gradle, Maven, Cargo, dotnet test, Rakefile, composer.json, swift test |
+| `coverage-config` | 4 | No | nyc, Jest, Vitest, .coveragerc, JaCoCo, Kover, tarpaulin, cargo-llvm-cov, Coverlet, SimpleCov, PHPUnit coverage |
 | `e2e-tests` | 4 | No | Playwright, Cypress, E2E/integration directories |
 | `test-quality` | 5 | Yes | Test meaningfulness and coverage of key functionality |
 
@@ -400,10 +400,10 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 
 | Criterion | Level | AI | What It Detects |
 |---|---|---|---|
-| `lock-file` | 1 | No | package-lock.json, bun.lockb, yarn.lock, go.sum, Cargo.lock, gradle.lockfile, etc. |
+| `lock-file` | 1 | No | package-lock.json, bun.lockb, yarn.lock, go.sum, Cargo.lock, gradle.lockfile, packages.lock.json, Gemfile.lock, composer.lock, Package.resolved |
 | `env-documentation` | 2 | No | .env.example, .env.template |
-| `setup-script` | 2 | No | Makefile targets, setup scripts, `dev` script, Gradle wrapper, Maven wrapper |
-| `version-pinned` | 2 | No | .nvmrc, .python-version, .tool-versions, mise.toml, .sdkmanrc, .java-version, rust-toolchain.toml |
+| `setup-script` | 2 | No | Makefile targets, setup scripts, `dev` script, Gradle wrapper, Maven wrapper, .sln (dotnet), Rakefile |
+| `version-pinned` | 2 | No | .nvmrc, .python-version, .tool-versions, mise.toml, .sdkmanrc, .java-version, rust-toolchain.toml, .ruby-version, .php-version, .swift-version, global.json |
 | `containerization` | 3 | No | Dockerfile, docker-compose, devcontainers |
 
 ### ⚙️ CI/CD
@@ -411,9 +411,9 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 | Criterion | Level | AI | What It Detects |
 |---|---|---|---|
 | `ci-config` | 2 | No | GitHub Actions, GitLab CI, CircleCI, Jenkins, Travis |
-| `ci-runs-tests` | 3 | No | Test commands in CI workflows (npm/yarn/pnpm/bun test, Jest, Vitest, pytest, go test, Gradle, Maven, cargo test) |
-| `ci-runs-linters` | 3 | No | Lint commands in CI workflows (ESLint, Biome, Ruff, golangci-lint, ktlint, detekt, Spotless, Checkstyle, PMD, cargo clippy, cargo fmt) |
-| `build-automated` | 3 | No | Build scripts and CI build steps (npm/yarn build, Gradle, Maven, go build, cargo build, docker build, poetry build) |
+| `ci-runs-tests` | 3 | No | Test commands in CI workflows (npm/yarn/pnpm/bun test, Jest, Vitest, pytest, go test, Gradle, Maven, cargo test, dotnet test, bundle exec rspec/rake, phpunit, composer test, swift test) |
+| `ci-runs-linters` | 3 | No | Lint commands in CI workflows (ESLint, Biome, Ruff, golangci-lint, ktlint, detekt, Spotless, Checkstyle, PMD, cargo clippy, cargo fmt, dotnet format, rubocop, phpstan, psalm, phpcs, swiftlint) |
+| `build-automated` | 3 | No | Build scripts and CI build steps (npm/yarn build, Gradle, Maven, go build, cargo build, docker build, poetry build, dotnet build/publish, swift build, xcodebuild) |
 | `deploy-pipeline` | 4 | No | Deploy/release jobs, Vercel, Netlify, Fly.io, Terraform |
 | `branch-protection` | 4 | No | Branch protection rules and settings |
 
@@ -421,8 +421,8 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 
 | Criterion | Level | AI | What It Detects |
 |---|---|---|---|
-| `no-outdated-deps` | 3 | No | Lock file freshness across all languages (npm, yarn, pnpm, bun, Gradle, Poetry, Pipfile, go.sum, Cargo.lock) |
-| `dead-code-detection` | 4 | No | Knip, unused-exports ESLint plugin, detekt, vulture (Python), cargo-udeps (Rust), SpotBugs/FindBugs (Java) |
+| `no-outdated-deps` | 3 | No | Lock file freshness across all languages (npm, yarn, pnpm, bun, Gradle, Poetry, Pipfile, go.sum, Cargo.lock, packages.lock.json, Gemfile.lock, composer.lock, Package.resolved) |
+| `dead-code-detection` | 4 | No | Knip, unused-exports ESLint plugin, detekt, vulture (Python), cargo-udeps (Rust), SpotBugs/FindBugs (Java), Roslynator (C#), debride/reek (Ruby), PHPMD (PHP) |
 | `bundle-analysis` | 5 | No | webpack-bundle-analyzer, @next/bundle-analyzer, size-limit |
 
 ### 🔒 Security
@@ -432,7 +432,7 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 | `license` | 1 | No | LICENSE file |
 | `security-policy` | 3 | No | SECURITY.md |
 | `dep-update-automation` | 3 | No | Dependabot, Renovate, Gradle versions plugin |
-| `security-scanning` | 4 | No | CodeQL, Snyk, Trivy, Semgrep, SonarQube, OWASP dependency-check, cargo-audit |
+| `security-scanning` | 4 | No | CodeQL, Snyk, Trivy, Semgrep, SonarQube, OWASP dependency-check, cargo-audit, SecurityCodeScan (C#), brakeman/bundler-audit (Ruby), roave/security-advisories (PHP) |
 | `secrets-detection` | 4 | No | gitleaks, detect-secrets in pre-commit or CI |
 
 </details>

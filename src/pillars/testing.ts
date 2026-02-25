@@ -150,12 +150,60 @@ const testing: Pillar = {
           };
         }
 
+        // Check .csproj files for C# test frameworks (xUnit, NUnit, MSTest)
+        const csprojFiles = await fg("**/*.csproj", { cwd: repoPath, absolute: false, ignore: ["node_modules/**", "vendor/**"] });
+        for (const csproj of csprojFiles) {
+          const csprojContent = await readFileContent(repoPath, csproj);
+          if (csprojContent && (
+            csprojContent.includes("xunit") ||
+            csprojContent.includes("nunit") ||
+            csprojContent.includes("MSTest") ||
+            csprojContent.includes("Microsoft.NET.Test.Sdk")
+          )) {
+            return {
+              criterionId: "test-framework",
+              pass: true,
+              message: `C# test framework found in ${csproj}`,
+            };
+          }
+        }
+
+        // Check for Ruby test frameworks (RSpec, Minitest)
+        const rspecFound = await fileExists(repoPath, ".rspec", "spec");
+        if (rspecFound) {
+          return { criterionId: "test-framework", pass: true, message: `Ruby test framework found: ${rspecFound}` };
+        }
+        const gemfileTest = await readFileContent(repoPath, "Gemfile");
+        if (gemfileTest && (gemfileTest.includes("rspec") || gemfileTest.includes("minitest"))) {
+          return { criterionId: "test-framework", pass: true, message: "Ruby test framework found in Gemfile" };
+        }
+
+        // Check for PHP test frameworks (PHPUnit)
+        const phpunitFound = await fileExists(repoPath, "phpunit.xml", "phpunit.xml.dist");
+        if (phpunitFound) {
+          return { criterionId: "test-framework", pass: true, message: `PHPUnit configuration found: ${phpunitFound}` };
+        }
+        const composerJsonTest = await readFileContent(repoPath, "composer.json");
+        if (composerJsonTest && composerJsonTest.includes("phpunit")) {
+          return { criterionId: "test-framework", pass: true, message: "PHPUnit found in composer.json" };
+        }
+
+        // Check for Swift test targets (SPM with Tests/ directory)
+        const packageSwift = await fileExists(repoPath, "Package.swift");
+        if (packageSwift) {
+          const swiftTestsDir = await fileExists(repoPath, "Tests");
+          if (swiftTestsDir) {
+            return { criterionId: "test-framework", pass: true, message: "Swift test targets found (Package.swift + Tests/)" };
+          }
+          return { criterionId: "test-framework", pass: true, message: "Swift Package Manager project detected (built-in XCTest support)" };
+        }
+
         return {
           criterionId: "test-framework",
           pass: false,
           message: "No test framework configuration found.",
           details:
-            "Set up Jest, Vitest, pytest, Go testing, JUnit, Kotest, or cargo test to enable automated testing.",
+            "Set up Jest, Vitest, pytest, Go testing, JUnit, Kotest, cargo test, xUnit/NUnit, RSpec, PHPUnit, or XCTest to enable automated testing.",
         };
       },
     },
@@ -184,6 +232,15 @@ const testing: Pillar = {
             "tests/**/*.rs",
             "src/**/tests.rs",
             "src/**/test_*.rs",
+            "**/*Test.cs",
+            "**/*Tests.cs",
+            "spec/**/*_spec.rb",
+            "test/**/test_*.rb",
+            "test/**/*_test.rb",
+            "tests/**/*Test.php",
+            "**/*Test.php",
+            "Tests/**/*Tests.swift",
+            "Tests/**/*Test.swift",
           ],
           {
             cwd: repoPath,
@@ -204,7 +261,7 @@ const testing: Pillar = {
           pass: false,
           message: "No test files found.",
           details:
-            "Add test files following naming conventions: *.test.ts, test_*.py, *_test.go, *Test.kt, *Test.java, tests/*.rs.",
+            "Add test files following naming conventions: *.test.ts, test_*.py, *_test.go, *Test.kt, *Test.java, tests/*.rs, *Test.cs, *_spec.rb, *Test.php, *Tests.swift.",
         };
       },
     },
@@ -289,12 +346,47 @@ const testing: Pillar = {
           };
         }
 
+        // Check for C# .sln or .csproj (implies dotnet test)
+        const slnFound = await fileExists(repoPath, "*.sln");
+        if (slnFound) {
+          return { criterionId: "test-script", pass: true, message: "Solution file found (provides dotnet test)" };
+        }
+        const csprojTestScript = await fg("*.csproj", { cwd: repoPath, absolute: false, deep: 1 });
+        if (csprojTestScript.length > 0) {
+          return { criterionId: "test-script", pass: true, message: ".csproj found (provides dotnet test)" };
+        }
+
+        // Check for Ruby Rakefile or Gemfile with rake
+        const rakefileFound = await fileExists(repoPath, "Rakefile");
+        if (rakefileFound) {
+          return { criterionId: "test-script", pass: true, message: "Rakefile found (provides rake test)" };
+        }
+
+        // Check for PHP composer.json with test script
+        const composerJsonScript = await readFileContent(repoPath, "composer.json");
+        if (composerJsonScript) {
+          try {
+            const composer = JSON.parse(composerJsonScript);
+            if (composer?.scripts?.test) {
+              return { criterionId: "test-script", pass: true, message: "Test script found in composer.json" };
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+
+        // Check for Swift Package.swift (implies swift test)
+        const packageSwiftTest = await fileExists(repoPath, "Package.swift");
+        if (packageSwiftTest) {
+          return { criterionId: "test-script", pass: true, message: "Package.swift found (provides swift test)" };
+        }
+
         return {
           criterionId: "test-script",
           pass: false,
           message: "No test script or target found.",
           details:
-            'Add a "test" script in package.json, Makefile, Gradle, Maven, or Cargo.',
+            'Add a "test" script in package.json, Makefile, Gradle, Maven, Cargo, dotnet, Rakefile, composer.json, or Package.swift.',
         };
       },
     },
@@ -405,6 +497,34 @@ const testing: Pillar = {
           };
         }
 
+        // Check .csproj files for C# Coverlet
+        const csprojCovFiles = await fg("**/*.csproj", { cwd: repoPath, absolute: false, ignore: ["node_modules/**", "vendor/**"] });
+        for (const csproj of csprojCovFiles) {
+          const csprojContent = await readFileContent(repoPath, csproj);
+          if (csprojContent && (csprojContent.includes("coverlet.collector") || csprojContent.includes("coverlet.msbuild"))) {
+            return { criterionId: "coverage-config", pass: true, message: `Coverlet coverage configured in ${csproj}` };
+          }
+        }
+
+        // Check Ruby Gemfile for SimpleCov
+        const gemfileCov = await readFileContent(repoPath, "Gemfile");
+        if (gemfileCov && gemfileCov.includes("simplecov")) {
+          return { criterionId: "coverage-config", pass: true, message: "SimpleCov coverage found in Gemfile" };
+        }
+
+        // Check PHP phpunit.xml for coverage config
+        for (const phpunitFile of ["phpunit.xml", "phpunit.xml.dist"]) {
+          const phpunitContent = await readFileContent(repoPath, phpunitFile);
+          if (phpunitContent && (phpunitContent.includes("<coverage") || phpunitContent.includes("<logging"))) {
+            return { criterionId: "coverage-config", pass: true, message: `Coverage configured in ${phpunitFile}` };
+          }
+        }
+        // Check composer.json for pcov or xdebug
+        const composerCov = await readFileContent(repoPath, "composer.json");
+        if (composerCov && (composerCov.includes("pcov") || composerCov.includes("xdebug"))) {
+          return { criterionId: "coverage-config", pass: true, message: "PHP coverage tool found in composer.json" };
+        }
+
         // Check CI config files for coverage mentions
         const ciFiles = await fg(
           [".github/workflows/*.yml", ".github/workflows/*.yaml"],
@@ -426,7 +546,7 @@ const testing: Pillar = {
           pass: false,
           message: "No coverage configuration found.",
           details:
-            "Configure test coverage reporting in your test framework, CI pipeline, JaCoCo, or Kover.",
+            "Configure test coverage reporting in your test framework, CI pipeline, JaCoCo, Kover, Coverlet, SimpleCov, or PHPUnit coverage.",
         };
       },
     },
@@ -482,7 +602,7 @@ const testing: Pillar = {
         }
 
         const testFiles = await fg(
-          ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.go", "**/*Test.kt", "**/*Spec.kt", "src/test/**/*.kt", "**/*Test.java", "src/test/**/*.java", "tests/**/*.rs"],
+          ["**/*.test.*", "**/*.spec.*", "**/test_*.py", "**/*_test.go", "**/*Test.kt", "**/*Spec.kt", "src/test/**/*.kt", "**/*Test.java", "src/test/**/*.java", "tests/**/*.rs", "**/*Test.cs", "**/*Tests.cs", "spec/**/*_spec.rb", "tests/**/*Test.php", "Tests/**/*Tests.swift"],
           {
             cwd: repoPath,
             absolute: false,

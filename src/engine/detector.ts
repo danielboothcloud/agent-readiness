@@ -49,8 +49,12 @@ const TYPE_INDICATORS: TypeIndicator[] = [
   { type: "python", files: ["pyproject.toml", "setup.py", "requirements.txt"] },
   { type: "go", files: ["go.mod"] },
   { type: "rust", files: ["Cargo.toml"] },
+  { type: "csharp", files: ["*.csproj", "*.sln"] },
   { type: "kotlin", files: ["build.gradle.kts"] },
   { type: "java", files: ["pom.xml", "build.gradle"] },
+  { type: "ruby", files: ["Gemfile"] },
+  { type: "php", files: ["composer.json"] },
+  { type: "swift", files: ["Package.swift"] },
 ];
 
 async function detectTypes(repoPath: string): Promise<string[]> {
@@ -58,7 +62,16 @@ async function detectTypes(repoPath: string): Promise<string[]> {
 
   for (const indicator of TYPE_INDICATORS) {
     for (const file of indicator.files) {
-      if (await fileExists(path.join(repoPath, file))) {
+      if (file.includes("*")) {
+        // Use glob for patterns with wildcards
+        const matches = await fg(file, { cwd: repoPath, absolute: false, onlyFiles: true, deep: 1 });
+        if (matches.length > 0) {
+          if (!detected.includes(indicator.type)) {
+            detected.push(indicator.type);
+          }
+          break;
+        }
+      } else if (await fileExists(path.join(repoPath, file))) {
         if (!detected.includes(indicator.type)) {
           detected.push(indicator.type);
         }

@@ -32,6 +32,14 @@ const styleLinting: Pillar = {
           "detekt.yml",
           ".detekt.yml",
           "detekt-config.yml",
+          "stylecop.json",
+          ".rubocop.yml",
+          "phpstan.neon",
+          "phpstan.neon.dist",
+          "psalm.xml",
+          "phpcs.xml",
+          "phpcs.xml.dist",
+          ".swiftlint.yml",
         );
         if (found) {
           return {
@@ -84,6 +92,27 @@ const styleLinting: Pillar = {
           }
         }
 
+        // Check .csproj files for C# Roslyn analyzers / StyleCop
+        const csprojFiles = await fg("*.csproj", { cwd: repoPath, absolute: false, deep: 1 });
+        for (const csproj of csprojFiles) {
+          const csprojContent = await readFileContent(repoPath, csproj);
+          if (csprojContent && (csprojContent.includes("Microsoft.CodeAnalysis") || csprojContent.includes("StyleCop.Analyzers"))) {
+            return { criterionId: "linter", pass: true, message: `Roslyn/StyleCop analyzers found in ${csproj}` };
+          }
+        }
+
+        // Check composer.json for PHP linters
+        const composerJson = await readFileContent(repoPath, "composer.json");
+        if (composerJson && (composerJson.includes("phpstan") || composerJson.includes("psalm") || composerJson.includes("squizlabs/php_codesniffer"))) {
+          return { criterionId: "linter", pass: true, message: "PHP linter found in composer.json" };
+        }
+
+        // Check Gemfile for Ruby linters
+        const gemfile = await readFileContent(repoPath, "Gemfile");
+        if (gemfile && gemfile.includes("rubocop")) {
+          return { criterionId: "linter", pass: true, message: "RuboCop linter found in Gemfile" };
+        }
+
         // Check for Rust clippy config
         const clippyFound = await fileExists(repoPath, "clippy.toml", ".clippy.toml");
         if (clippyFound) {
@@ -101,7 +130,7 @@ const styleLinting: Pillar = {
           pass: false,
           message: "No linter configuration found.",
           details:
-            "Add ESLint, Biome, Ruff, golangci-lint, detekt, ktlint, Checkstyle, or clippy configuration to enforce code quality.",
+            "Add ESLint, Biome, Ruff, golangci-lint, detekt, ktlint, Checkstyle, clippy, StyleCop, RuboCop, PHPStan, or SwiftLint to enforce code quality.",
         };
       },
     },
@@ -182,6 +211,33 @@ const styleLinting: Pillar = {
           return { criterionId: "formatter", pass: true, message: "Rust project detected (rustfmt is built-in via cargo fmt)" };
         }
 
+        // C# has built-in formatting via dotnet format (since .NET 6)
+        if (_projectInfo.detectedTypes.includes("csharp")) {
+          return { criterionId: "formatter", pass: true, message: "C# has built-in formatting via dotnet format" };
+        }
+
+        // Ruby: RuboCop acts as formatter
+        const rubocopFmt = await fileExists(repoPath, ".rubocop.yml");
+        if (rubocopFmt) {
+          return { criterionId: "formatter", pass: true, message: "RuboCop formatter configuration found: .rubocop.yml" };
+        }
+        const gemfileFmt = await readFileContent(repoPath, "Gemfile");
+        if (gemfileFmt && gemfileFmt.includes("rubocop")) {
+          return { criterionId: "formatter", pass: true, message: "RuboCop (formatter) found in Gemfile" };
+        }
+
+        // PHP: PHP-CS-Fixer
+        const phpCsFixerFound = await fileExists(repoPath, ".php-cs-fixer.php", ".php-cs-fixer.dist.php", ".php_cs", ".php_cs.dist");
+        if (phpCsFixerFound) {
+          return { criterionId: "formatter", pass: true, message: `PHP-CS-Fixer configuration found: ${phpCsFixerFound}` };
+        }
+
+        // Swift: SwiftFormat
+        const swiftFormatFound = await fileExists(repoPath, ".swiftformat");
+        if (swiftFormatFound) {
+          return { criterionId: "formatter", pass: true, message: "SwiftFormat configuration found: .swiftformat" };
+        }
+
         // Check Gradle files for Kotlin/Java formatters (ktlint, ktfmt, spotless, google-java-format)
         for (const gradleFile of ["build.gradle.kts", "build.gradle"]) {
           const gradleContent = await readFileContent(repoPath, gradleFile);
@@ -214,7 +270,7 @@ const styleLinting: Pillar = {
           pass: false,
           message: "No formatter configuration found.",
           details:
-            "Add Prettier, Biome, Black, Ruff, ktlint, ktfmt, Spotless, google-java-format, or rustfmt to enforce consistent code formatting.",
+            "Add Prettier, Biome, Black, Ruff, ktlint, ktfmt, Spotless, google-java-format, rustfmt, RuboCop, PHP-CS-Fixer, or SwiftFormat to enforce consistent code formatting.",
         };
       },
     },
@@ -233,6 +289,8 @@ const styleLinting: Pillar = {
           ["go", "Go has a built-in static type system"],
           ["java", "Java has a built-in static type system"],
           ["rust", "Rust has a built-in static type system with ownership model"],
+          ["csharp", "C# has a built-in static type system"],
+          ["swift", "Swift has a built-in static type system"],
         ];
         for (const [lang, msg] of staticLangs) {
           if (_projectInfo.detectedTypes.includes(lang)) {
@@ -393,7 +451,7 @@ const styleLinting: Pillar = {
         }
 
         const srcFiles = await fg(
-          ["**/*.{ts,tsx,js,jsx,py,go,rs,kt,kts,java}", "!node_modules/**", "!vendor/**", "!dist/**", "!build/**", "!target/**"],
+          ["**/*.{ts,tsx,js,jsx,py,go,rs,kt,kts,java,cs,rb,php,swift}", "!node_modules/**", "!vendor/**", "!dist/**", "!build/**", "!target/**"],
           { cwd: repoPath, absolute: false },
         );
 
