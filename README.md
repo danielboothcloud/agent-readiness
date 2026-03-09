@@ -14,7 +14,7 @@
 Evaluate how ready your codebase is for autonomous AI coding agents like **Claude Code**, **Cursor**, **GitHub Copilot**, and **Codex**. 39 automated checks, 7 pillars, 10+ languages. One command:
 
 ```bash
-bunx @kodus/agent-readiness .
+npx @kodus/agent-readiness .
 ```
 
 <!-- TODO: Add GIF/screenshot of terminal output here -->
@@ -107,23 +107,23 @@ We believe every team deserves to know how ready their codebase is, without send
 Run it instantly with no installation:
 
 ```bash
+# Using npx (works everywhere)
+npx @kodus/agent-readiness .
+
 # Using bun
 bunx @kodus/agent-readiness .
 
-# Using npx
-npx @kodus/agent-readiness .
-
 # Evaluate a specific repository
-bunx @kodus/agent-readiness /path/to/repo
+npx @kodus/agent-readiness /path/to/repo
 
 # With AI-powered analysis
-bunx @kodus/agent-readiness . --ai --api-key sk-your-key
+npx @kodus/agent-readiness . --ai --api-key sk-your-key
 
 # JSON output for integrations
-bunx @kodus/agent-readiness . --format json
+npx @kodus/agent-readiness . --format json
 
 # CI mode with minimum level gate
-bunx @kodus/agent-readiness . --ci --min-level 3
+npx @kodus/agent-readiness . --ci --min-level 3
 ```
 
 ---
