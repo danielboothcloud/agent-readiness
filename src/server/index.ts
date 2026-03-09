@@ -1,13 +1,24 @@
 import path from "node:path";
+import fs from "node:fs";
+import http from "node:http";
+import { fileURLToPath } from "node:url";
+import { exec } from "node:child_process";
 import type { SerializedReportData } from "../engine/serializer.js";
 
-function findWebDir(): string {
-  // When bundled: import.meta.dir = .../dist/, web is at dist/web
-  const bundled = path.resolve(import.meta.dir, "web");
-  // When running from source: import.meta.dir = .../src/server/, web is at ../../dist/web
-  const source = path.resolve(import.meta.dir, "../../dist/web");
+function getCurrentDir(): string {
+  // Bun provides import.meta.dir, Node uses import.meta.dirname (21+) or fileURLToPath
+  if (typeof import.meta.dir === "string") return import.meta.dir;
+  if (typeof import.meta.dirname === "string") return import.meta.dirname;
+  return path.dirname(fileURLToPath(import.meta.url));
+}
 
-  const fs = require("node:fs");
+function findWebDir(): string {
+  const currentDir = getCurrentDir();
+  // When bundled: currentDir = .../dist/, web is at dist/web
+  const bundled = path.resolve(currentDir, "web");
+  // When running from source: currentDir = .../src/server/, web is at ../../dist/web
+  const source = path.resolve(currentDir, "../../dist/web");
+
   if (fs.existsSync(bundled)) return bundled;
   if (fs.existsSync(source)) return source;
   return bundled; // fallback for error message
@@ -33,27 +44,25 @@ function getMimeType(filePath: string): string {
 }
 
 /**
- * Starts a Bun HTTP server that serves the pre-built SPA
+ * Starts an HTTP server that serves the pre-built SPA
  * with the report JSON injected into the HTML.
  *
  * Returns the server instance and the URL it's listening on.
  */
 export async function startServer(reportData: SerializedReportData): Promise<{
-  server: ReturnType<typeof Bun.serve>;
+  server: http.Server;
   url: string;
 }> {
-  // Read the index.html template
   const indexPath = path.join(DIST_WEB_DIR, "index.html");
-  const indexFile = Bun.file(indexPath);
 
-  if (!(await indexFile.exists())) {
+  if (!fs.existsSync(indexPath)) {
     throw new Error(
       `Web dashboard not built. Run "bun run build:web" first.\n` +
         `Expected files at: ${DIST_WEB_DIR}`,
     );
   }
 
-  const indexHtml = await indexFile.text();
+  const indexHtml = fs.readFileSync(indexPath, "utf-8");
 
   // Inject report data into HTML
   const jsonPayload = JSON.stringify(reportData);
@@ -62,58 +71,61 @@ export async function startServer(reportData: SerializedReportData): Promise<{
     `<script>window.__KODUS_REPORT_DATA__ = ${jsonPayload};</script>\n</head>`,
   );
 
-  const server = Bun.serve({
-    port: 0, // random available port
-    async fetch(req) {
-      const url = new URL(req.url);
-      let pathname = url.pathname;
+  const server = http.createServer((req, res) => {
+    const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
+    const pathname = url.pathname;
 
-      // Serve injected index.html for root and SPA fallback
-      if (pathname === "/" || pathname === "/index.html") {
-        return new Response(injectedHtml, {
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        });
-      }
+    // Serve injected index.html for root and SPA fallback
+    if (pathname === "/" || pathname === "/index.html") {
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(injectedHtml);
+      return;
+    }
 
-      // Try to serve static file from dist/web
-      const filePath = path.join(DIST_WEB_DIR, pathname);
+    // Try to serve static file from dist/web
+    const filePath = path.join(DIST_WEB_DIR, pathname);
 
-      // Prevent directory traversal
-      if (!filePath.startsWith(DIST_WEB_DIR)) {
-        return new Response("Forbidden", { status: 403 });
-      }
+    // Prevent directory traversal
+    if (!filePath.startsWith(DIST_WEB_DIR)) {
+      res.writeHead(403);
+      res.end("Forbidden");
+      return;
+    }
 
-      const file = Bun.file(filePath);
-      if (await file.exists()) {
-        return new Response(file, {
-          headers: { "Content-Type": getMimeType(filePath) },
-        });
-      }
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      const content = fs.readFileSync(filePath);
+      res.writeHead(200, { "Content-Type": getMimeType(filePath) });
+      res.end(content);
+      return;
+    }
 
-      // SPA fallback: serve injected index.html for unknown routes
-      return new Response(injectedHtml, {
-        headers: { "Content-Type": "text/html; charset=utf-8" },
-      });
-    },
+    // SPA fallback: serve injected index.html for unknown routes
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(injectedHtml);
   });
 
-  const url = `http://localhost:${server.port}`;
-  return { server, url };
+  return new Promise((resolve) => {
+    server.listen(0, () => {
+      const addr = server.address();
+      const port = typeof addr === "object" && addr ? addr.port : 0;
+      const url = `http://localhost:${port}`;
+      resolve({ server, url });
+    });
+  });
 }
 
 /**
  * Opens the given URL in the default browser.
  */
 export async function openBrowser(url: string): Promise<void> {
-  const proc = Bun.spawn({
-    cmd:
-      process.platform === "darwin"
-        ? ["open", url]
-        : process.platform === "win32"
-          ? ["cmd", "/c", "start", url]
-          : ["xdg-open", url],
-    stdout: "ignore",
-    stderr: "ignore",
+  const cmd =
+    process.platform === "darwin"
+      ? `open "${url}"`
+      : process.platform === "win32"
+        ? `start "" "${url}"`
+        : `xdg-open "${url}"`;
+
+  return new Promise((resolve) => {
+    exec(cmd, () => resolve());
   });
-  await proc.exited;
 }
