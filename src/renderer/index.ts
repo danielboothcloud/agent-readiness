@@ -15,7 +15,7 @@ import { LEVEL_LABELS } from "../types/index.js";
 function progressBar(percentage: number, width: number = 20): string {
   const filled = Math.round((percentage / 100) * width);
   const empty = width - filled;
-  const bar = "\u2588".repeat(filled) + "\u2591".repeat(empty);
+  const bar = "#".repeat(filled) + "-".repeat(empty);
   if (percentage >= 80) return chalk.green(bar);
   if (percentage >= 50) return chalk.yellow(bar);
   return chalk.red(bar);
@@ -123,7 +123,7 @@ function renderHeader(data: ReportData, ci: boolean): void {
 
   console.log(
     boxen(content, {
-      borderStyle: "doubleSingle",
+      borderStyle: "classic",
       padding: { top: 1, bottom: 1, left: 3, right: 3 },
       margin: { top: 1, bottom: 0, left: 0, right: 0 },
       borderColor: "cyan",
@@ -153,7 +153,7 @@ function renderLevelBadge(data: ReportData, ci: boolean): void {
   const borderColor = getLevelBorderColor(level);
 
   const levelText = colorFn.bold(
-    `  LEVEL ${level}  ${chalk.dim("\u2014")}  ${label}  `,
+    `  LEVEL ${level}  ${chalk.dim("-")}  ${label}  `,
   );
 
   let progressLine = "";
@@ -173,7 +173,7 @@ function renderLevelBadge(data: ReportData, ci: boolean): void {
 
   console.log(
     boxen(content, {
-      borderStyle: "round",
+      borderStyle: "classic",
       padding: { top: 1, bottom: 1, left: 2, right: 2 },
       margin: { top: 1, bottom: 0, left: 0, right: 0 },
       borderColor,
@@ -198,29 +198,29 @@ function renderPillarSummary(data: ReportData, ci: boolean): void {
 
   console.log("");
   console.log(
-    chalk.bold.white("  \u250C\u2500 ") +
+    chalk.bold.white("  +- ") +
       chalk.bold.cyan("PILLAR SUMMARY") +
-      chalk.bold.white(" \u2500".repeat(40)),
+      chalk.bold.white(" -".repeat(20)),
   );
   console.log("");
 
   const table = new Table({
     chars: {
-      top: "\u2500",
-      "top-mid": "\u252C",
-      "top-left": "\u250C",
-      "top-right": "\u2510",
-      bottom: "\u2500",
-      "bottom-mid": "\u2534",
-      "bottom-left": "\u2514",
-      "bottom-right": "\u2518",
-      left: "\u2502",
-      "left-mid": "\u251C",
-      mid: "\u2500",
-      "mid-mid": "\u253C",
-      right: "\u2502",
-      "right-mid": "\u2524",
-      middle: "\u2502",
+      top: "-",
+      "top-mid": "+",
+      "top-left": "+",
+      "top-right": "+",
+      bottom: "-",
+      "bottom-mid": "+",
+      "bottom-left": "+",
+      "bottom-right": "+",
+      left: "|",
+      "left-mid": "+",
+      mid: "-",
+      "mid-mid": "+",
+      right: "|",
+      "right-mid": "+",
+      middle: "|",
     },
     style: {
       head: [],
@@ -286,9 +286,9 @@ function renderDetailedBreakdown(data: ReportData, ci: boolean): void {
   }
 
   console.log(
-    chalk.bold.white("  \u250C\u2500 ") +
+    chalk.bold.white("  +- ") +
       chalk.bold.cyan("DETAILED BREAKDOWN") +
-      chalk.bold.white(" \u2500".repeat(38)),
+      chalk.bold.white(" -".repeat(19)),
   );
 
   for (const pillar of data.pillars) {
@@ -298,21 +298,21 @@ function renderDetailedBreakdown(data: ReportData, ci: boolean): void {
 
     console.log("");
     console.log(
-      `  ${pillar.icon}  ${chalk.bold.white(pillar.name)}  ${chalk.dim("\u2500\u2500\u2500")}  ${chalk.dim(`${passed}/${total} passing`)}`,
+      `  ${pillar.icon}  ${chalk.bold.white(pillar.name)}  ${chalk.dim("---")}  ${chalk.dim(`${passed}/${total} passing`)}`,
     );
     console.log("");
 
     for (const r of results) {
       if (r.skipped) {
-        const icon = chalk.cyan("\u25CB");
+        const icon = chalk.cyan("o");
         console.log(
           `    ${icon}  ${chalk.dim(r.message)}  ${chalk.cyan.dim("(requires --ai)")}`,
         );
       } else if (r.pass) {
-        const icon = chalk.green.bold("\u2713");
+        const icon = chalk.green.bold("*");
         console.log(`    ${icon}  ${chalk.white(r.message)}`);
       } else {
-        const icon = chalk.red.bold("\u2717");
+        const icon = chalk.red.bold("x");
         console.log(`    ${icon}  ${chalk.white(r.message)}`);
         if (r.details) {
           const detailLines = r.details.split("\n");
@@ -324,7 +324,7 @@ function renderDetailedBreakdown(data: ReportData, ci: boolean): void {
     }
 
     console.log("");
-    console.log(chalk.dim("  " + "\u2500".repeat(56)));
+    console.log(chalk.dim("  " + "-".repeat(56)));
   }
 }
 
@@ -356,13 +356,13 @@ function renderRecommendations(data: ReportData, ci: boolean): void {
 
   if (data.recommendations.length === 0) {
     const content =
-      chalk.green.bold("\u2728  All checks passing!") +
+      chalk.green.bold("All checks passing!") +
       "\n\n" +
       chalk.white("Your repository is fully agent-ready. Congratulations!");
 
     console.log(
       boxen(content, {
-        borderStyle: "round",
+        borderStyle: "classic",
         padding: { top: 1, bottom: 1, left: 3, right: 3 },
         margin: { top: 0, bottom: 0, left: 0, right: 0 },
         borderColor: "green",
@@ -373,9 +373,9 @@ function renderRecommendations(data: ReportData, ci: boolean): void {
   }
 
   console.log(
-    chalk.bold.white("  \u250C\u2500 ") +
+    chalk.bold.white("  +- ") +
       chalk.bold.cyan("TOP RECOMMENDATIONS") +
-      chalk.bold.white(" \u2500".repeat(37)),
+      chalk.bold.white(" -".repeat(19)),
   );
   console.log("");
 
@@ -415,7 +415,7 @@ function renderFooter(data: ReportData, ci: boolean): void {
 
   if (hasSkipped) {
     lines.push(
-      chalk.yellow("\u26A1") +
+      chalk.yellow("!") +
         chalk.dim("  Run with ") +
         chalk.yellow.bold("--ai") +
         chalk.dim(" for deeper analysis with LLM-powered checks"),
@@ -426,7 +426,7 @@ function renderFooter(data: ReportData, ci: boolean): void {
   lines.push(
     chalk.dim("  Powered by ") +
       chalk.bold.cyan("Kodus") +
-      chalk.dim("  \u2022  https://kodus.io"),
+      chalk.dim("  |  https://kodus.io"),
   );
 
   console.log(lines.join("\n"));
