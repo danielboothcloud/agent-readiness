@@ -1,14 +1,24 @@
-# @kodus/agent-readiness
+# Is your codebase ready for AI agents?
 
-[![npm version](https://img.shields.io/npm/v/@kodus/agent-readiness.svg)](https://www.npmjs.com/package/@kodus/agent-readiness)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen.svg)](https://github.com/kodus-ai/agent-readiness)
+<p align="center">
+  <strong>@kodus/agent-readiness</strong> — the open-source alternative to Factory.ai's Agent Readiness.
+</p>
 
-**The open-source alternative to Factory.ai's Agent Readiness.** Evaluate how ready your codebase is for autonomous AI coding agents.
+<p align="center">
+  <a href="https://www.npmjs.com/package/@kodus/agent-readiness"><img src="https://img.shields.io/npm/v/@kodus/agent-readiness.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@kodus/agent-readiness"><img src="https://img.shields.io/npm/dm/@kodus/agent-readiness.svg" alt="npm downloads"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://github.com/kodustech/agent-readiness"><img src="https://img.shields.io/github/stars/kodustech/agent-readiness?style=social" alt="GitHub stars"></a>
+</p>
+
+Evaluate how ready your codebase is for autonomous AI coding agents like **Claude Code**, **Cursor**, **GitHub Copilot**, and **Codex**. 39 automated checks, 7 pillars, 10+ languages. One command:
 
 ```bash
 bunx @kodus/agent-readiness .
 ```
+
+<!-- TODO: Add GIF/screenshot of terminal output here -->
+<!-- ![Agent Readiness Demo](docs/assets/demo.gif) -->
 
 ---
 
@@ -17,7 +27,7 @@ bunx @kodus/agent-readiness .
 ```
 $ bunx @kodus/agent-readiness .
 
-  @kodus/agent-readiness v0.1.0
+  @kodus/agent-readiness v0.1.2
 
   Repository: my-project
   Project types: node
@@ -52,6 +62,14 @@ AI coding agents like **Claude Code**, **Cursor**, **GitHub Copilot**, **OpenAI 
 Repos with clear conventions, solid test suites, good documentation, and consistent CI/CD pipelines let AI agents work autonomously with fewer errors and hallucinations. Repos without these foundations force agents into guesswork.
 
 **Agent readiness** is the measure of how well your codebase supports autonomous AI coding. [Factory.ai](https://factory.ai) popularized this concept, but their solution is proprietary and cloud-only. `@kodus/agent-readiness` brings the same evaluation to everyone -- open source, free, and running entirely on your machine.
+
+---
+
+## Why Open Source?
+
+Factory.ai popularized the concept of "Agent Readiness" — but their solution is proprietary, cloud-only, and tied to their own AI agents.
+
+We believe every team deserves to know how ready their codebase is, without sending code to third-party servers or paying for a score. `@kodus/agent-readiness` runs entirely on your machine, works with any AI agent, and is free forever.
 
 ---
 
@@ -358,6 +376,8 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 
 ## All Checks
 
+**39 checks** across **7 pillars**, covering **10+ languages** (Node.js, Python, Go, Rust, Java, Kotlin, C#, Ruby, PHP, Swift). 4 checks use optional AI analysis for deeper evaluation.
+
 <details>
 <summary><strong>View all 39 criteria across 7 pillars</strong></summary>
 
@@ -478,5 +498,5 @@ MIT -- see [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  Built with care by <a href="https://kodus.io">Kodus</a>
+  Built with care by <a href="https://kodus.io">Kodus</a> · <a href="https://github.com/kodustech">GitHub</a>
 </p>
