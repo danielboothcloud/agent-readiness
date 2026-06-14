@@ -32,6 +32,12 @@ const setupScriptCheck = getCheck(devEnvironment, "setup-script");
 // lock-file
 // ---------------------------------------------------------------------------
 describe("lock-file", () => {
+  test("node: bun.lock", async () => {
+    const dir = await make("node-bun-lock", { "bun.lock": "{}" });
+    const r = await lockFileCheck(dir, mockProjectInfo({ detectedTypes: ["node"] }));
+    expect(r.pass).toBe(true);
+  });
+
   test("csharp: packages.lock.json", async () => {
     const dir = await make("cs-lock", { "packages.lock.json": "{}" });
     const r = await lockFileCheck(dir, mockProjectInfo({ detectedTypes: ["csharp"] }));
@@ -67,6 +73,22 @@ describe("lock-file", () => {
 // version-pinned
 // ---------------------------------------------------------------------------
 describe("version-pinned", () => {
+  test("node: packageManager pins bun", async () => {
+    const dir = await make("node-bun-package-manager", {
+      "package.json": '{"packageManager":"bun@1.2.20"}',
+    });
+    const r = await versionPinnedCheck(dir, mockProjectInfo({ detectedTypes: ["node"] }));
+    expect(r.pass).toBe(true);
+  });
+
+  test("node: engines.bun declares bun version", async () => {
+    const dir = await make("node-bun-engines", {
+      "package.json": '{"engines":{"bun":">=1.2.0"}}',
+    });
+    const r = await versionPinnedCheck(dir, mockProjectInfo({ detectedTypes: ["node"] }));
+    expect(r.pass).toBe(true);
+  });
+
   test("ruby: .ruby-version", async () => {
     const dir = await make("rb-ver", { ".ruby-version": "3.2.2" });
     const r = await versionPinnedCheck(dir, mockProjectInfo({ detectedTypes: ["ruby"] }));

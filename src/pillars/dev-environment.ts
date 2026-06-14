@@ -25,6 +25,7 @@ const devEnvironment: Pillar = {
         const found = await fileExists(
           repoPath,
           "package-lock.json",
+          "bun.lock",
           "bun.lockb",
           "yarn.lock",
           "pnpm-lock.yaml",
@@ -248,6 +249,30 @@ const devEnvironment: Pillar = {
             message: `Version pinning found: ${found}`,
           };
         }
+
+        const packageJson = await readFileContent(repoPath, "package.json");
+        if (packageJson) {
+          try {
+            const pkg = JSON.parse(packageJson);
+            if (typeof pkg.packageManager === "string" && pkg.packageManager.startsWith("bun@")) {
+              return {
+                criterionId: "version-pinned",
+                pass: true,
+                message: "Bun version pinned in package.json packageManager",
+              };
+            }
+            if (typeof pkg.engines?.bun === "string") {
+              return {
+                criterionId: "version-pinned",
+                pass: true,
+                message: "Bun version declared in package.json engines.bun",
+              };
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+
         return {
           criterionId: "version-pinned",
           pass: false,

@@ -28,6 +28,7 @@ const codeHealth: Pillar = {
         // Check all common lock/build files for freshness
         const lockFiles = [
           "package-lock.json",
+          "bun.lock",
           "bun.lockb",
           "yarn.lock",
           "pnpm-lock.yaml",
