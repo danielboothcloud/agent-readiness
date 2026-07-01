@@ -1,6 +1,6 @@
 {
   "name": "@danielboothcloud/agent-readiness",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Evaluate how prepared your codebase is for autonomous AI coding agents",
   "type": "module",
   "bin": {

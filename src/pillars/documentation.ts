@@ -136,38 +136,6 @@ const documentation: Pillar = {
       },
     },
     {
-      id: "ai-context",
-      name: "AI context files",
-      description:
-        "AI-specific context files exist (CLAUDE.md, .cursor/rules, copilot-instructions.md).",
-      pillarId: "documentation",
-      level: 3,
-      requiresLLM: false,
-      check: async (repoPath, _projectInfo) => {
-        const found = await fileExists(
-          repoPath,
-          "CLAUDE.md",
-          ".cursor/rules",
-          ".cursorrules",
-          ".github/copilot-instructions.md",
-        );
-        if (found) {
-          return {
-            criterionId: "ai-context",
-            pass: true,
-            message: `AI context file found: ${found}`,
-          };
-        }
-        return {
-          criterionId: "ai-context",
-          pass: false,
-          message: "No AI context files found.",
-          details:
-            "Add CLAUDE.md, .cursorrules, or .github/copilot-instructions.md to provide context for AI agents.",
-        };
-      },
-    },
-    {
       id: "architecture-docs",
       name: "Architecture documentation",
       description:
