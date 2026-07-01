@@ -1,5 +1,9 @@
 # Is your codebase ready for AI agents?
 
+> **Fork of [kodustech/agent-readiness](https://github.com/kodustech/agent-readiness)** (MIT © Kodus).
+> Adds two pillars — **Architecture & Methodology** and **Context & Capabilities** — for grading
+> methodology enforcement and agent context (MCP/connectors/skills). All credit for the original to Kodus.
+
 <p align="center">
   <strong>@kodus/agent-readiness</strong> — the open-source alternative to Factory.ai's Agent Readiness.
 </p>
