@@ -11,7 +11,7 @@ import { calculatePillarScores, calculateLevel } from "../engine/scorer.js";
 import { generateRecommendations } from "../engine/recommender.js";
 import { ALL_PILLARS } from "../pillars/index.js";
 import { renderReport } from "../renderer/index.js";
-import { loadConfig, generateDefaultConfig } from "../engine/config.js";
+import { DEFAULT_CONFIG_FILENAME, loadConfig, generateDefaultConfig } from "../engine/config.js";
 import { createLLMClient } from "../engine/llm-client.js";
 import { serializeReport } from "../engine/serializer.js";
 import { startServer, openBrowser } from "../server/index.js";
@@ -49,7 +49,7 @@ async function main(options: CLIOptions): Promise<void> {
 
     // Handle --init: generate config file and exit
     if (options.init) {
-      const configPath = path.join(repoPath, ".kodus-readiness.yml");
+      const configPath = path.join(repoPath, DEFAULT_CONFIG_FILENAME);
       try {
         await fs.access(configPath);
         console.error(
@@ -75,7 +75,10 @@ async function main(options: CLIOptions): Promise<void> {
     // Resolve AI settings: CLI flags override config, env var as fallback
     const aiEnabled = options.ai || config.aiEnabled || false;
     const apiKey =
-      options.apiKey || config.apiKey || process.env.KODUS_API_KEY || process.env.OPENAI_API_KEY;
+      options.apiKey ||
+      config.apiKey ||
+      process.env.AGENT_READINESS_API_KEY ||
+      process.env.OPENAI_API_KEY;
 
     // Create LLM client if AI is enabled
     const llmClient =
@@ -86,7 +89,7 @@ async function main(options: CLIOptions): Promise<void> {
     if (aiEnabled && !apiKey) {
       console.warn(
         chalk.yellow(
-          "Warning: --ai flag is set but no API key found. Set --api-key, KODUS_API_KEY, or OPENAI_API_KEY env variable.",
+          "Warning: --ai flag is set but no API key found. Set --api-key, AGENT_READINESS_API_KEY, or OPENAI_API_KEY env variable.",
         ),
       );
     }
@@ -205,7 +208,7 @@ export function run(): void {
   const program = new Command();
 
   program
-    .name("kodus-agent-readiness")
+    .name("agent-readiness")
     .description(description)
     .version(version)
     .argument("[path]", "Path to the repository to evaluate", process.cwd())
@@ -215,7 +218,7 @@ export function run(): void {
     .option("--format <format>", "Output format (text or json)", "text")
     .option("--min-level <n>", "Minimum maturity level to pass (1-5)")
     .option("--no-color", "Disable colored output")
-    .option("--init", "Generate a .kodus-readiness.yml config file", false)
+    .option("--init", `Generate a ${DEFAULT_CONFIG_FILENAME} config file`, false)
     .option("--no-web", "Disable the web dashboard")
     .action(async (pathArg: string, opts: Record<string, unknown>) => {
       const cliOptions: CLIOptions = {

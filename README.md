@@ -5,12 +5,12 @@
 > methodology enforcement and agent context (MCP/connectors/skills). All credit for the original to Kodus.
 
 <p align="center">
-  <strong>@kodus/agent-readiness</strong> — the open-source alternative to Factory.ai's Agent Readiness.
+  <strong>@danielboothcloud/agent-readiness</strong> — an agent-readiness scanner for local repositories.
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@kodus/agent-readiness"><img src="https://img.shields.io/npm/v/@kodus/agent-readiness.svg" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/@kodus/agent-readiness"><img src="https://img.shields.io/npm/dm/@kodus/agent-readiness.svg" alt="npm downloads"></a>
+  <a href="https://www.npmjs.com/package/@danielboothcloud/agent-readiness"><img src="https://img.shields.io/npm/v/@danielboothcloud/agent-readiness.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@danielboothcloud/agent-readiness"><img src="https://img.shields.io/npm/dm/@danielboothcloud/agent-readiness.svg" alt="npm downloads"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <a href="https://github.com/kodustech/agent-readiness"><img src="https://img.shields.io/github/stars/kodustech/agent-readiness?style=social" alt="GitHub stars"></a>
 </p>
@@ -18,7 +18,7 @@
 Evaluate how ready your codebase is for autonomous AI coding agents like **Claude Code**, **Cursor**, **GitHub Copilot**, and **Codex**. 39 automated checks, 7 pillars, 10+ languages. One command:
 
 ```bash
-npx @kodus/agent-readiness .
+pnpm dlx @danielboothcloud/agent-readiness .
 ```
 
 <!-- TODO: Add GIF/screenshot of terminal output here -->
@@ -29,9 +29,9 @@ npx @kodus/agent-readiness .
 ## Quick Demo
 
 ```
-$ bunx @kodus/agent-readiness .
+$ pnpm dlx @danielboothcloud/agent-readiness .
 
-  @kodus/agent-readiness v0.1.2
+  @danielboothcloud/agent-readiness
 
   Repository: my-project
   Project types: node
@@ -65,7 +65,7 @@ AI coding agents like **Claude Code**, **Cursor**, **GitHub Copilot**, **OpenAI 
 
 Repos with clear conventions, solid test suites, good documentation, and consistent CI/CD pipelines let AI agents work autonomously with fewer errors and hallucinations. Repos without these foundations force agents into guesswork.
 
-**Agent readiness** is the measure of how well your codebase supports autonomous AI coding. [Factory.ai](https://factory.ai) popularized this concept, but their solution is proprietary and cloud-only. `@kodus/agent-readiness` brings the same evaluation to everyone -- open source, free, and running entirely on your machine.
+**Agent readiness** is the measure of how well your codebase supports autonomous AI coding. [Factory.ai](https://factory.ai) popularized this concept, but their solution is proprietary and cloud-only. `@danielboothcloud/agent-readiness` brings the same evaluation to everyone -- open source, free, and running entirely on your machine.
 
 ---
 
@@ -73,20 +73,20 @@ Repos with clear conventions, solid test suites, good documentation, and consist
 
 Factory.ai popularized the concept of "Agent Readiness" — but their solution is proprietary, cloud-only, and tied to their own AI agents.
 
-We believe every team deserves to know how ready their codebase is, without sending code to third-party servers or paying for a score. `@kodus/agent-readiness` runs entirely on your machine, works with any AI agent, and is free forever.
+We believe every team deserves to know how ready their codebase is, without sending code to third-party servers or paying for a score. `@danielboothcloud/agent-readiness` runs entirely on your machine, works with any AI agent, and is free forever.
 
 ---
 
-## @kodus/agent-readiness vs Factory.ai
+## @danielboothcloud/agent-readiness vs Factory.ai
 
-| Feature | @kodus/agent-readiness | Factory.ai |
+| Feature | @danielboothcloud/agent-readiness | Factory.ai |
 |---|---|---|
 | **Open Source** | MIT License | Proprietary |
 | **Pricing** | Free forever | Token-based billing |
 | **Vendor lock-in** | None -- agent-agnostic | Tied to Factory Droids |
 | **Self-hosted** | Runs locally on your machine | Cloud only |
 | **Data privacy** | Your code never leaves your machine | Sent to their servers |
-| **Customizable** | Fully configurable via `.kodus-readiness.yml` | Limited |
+| **Customizable** | Fully configurable via `.agent-profile.yml` | Limited |
 | **CI/CD integration** | `--ci` + `--min-level` flags | API only |
 | **Languages** | Node, Python, Go, Rust, Java, Kotlin, C#, Ruby, PHP, Swift | Limited |
 
@@ -101,7 +101,7 @@ We believe every team deserves to know how ready their codebase is, without send
 - **Multi-language support**: Node.js, Python, Go, Rust, Java, Kotlin, C#/.NET, Ruby, PHP, Swift
 - **Monorepo detection**: npm/yarn/pnpm workspaces, Lerna, Nx, Turborepo
 - **CI/CD gates** with `--ci` and `--min-level` for quality enforcement
-- **Fully configurable** via `.kodus-readiness.yml`
+- **Fully configurable** via `.agent-profile.yml`
 - **JSON output** for programmatic integrations
 
 ---
@@ -111,23 +111,23 @@ We believe every team deserves to know how ready their codebase is, without send
 Run it instantly with no installation:
 
 ```bash
-# Using npx (works everywhere)
-npx @kodus/agent-readiness .
+# Using pnpm
+pnpm dlx @danielboothcloud/agent-readiness .
 
-# Using bun
-bunx @kodus/agent-readiness .
+# Using npm
+npx @danielboothcloud/agent-readiness .
 
 # Evaluate a specific repository
-npx @kodus/agent-readiness /path/to/repo
+pnpm dlx @danielboothcloud/agent-readiness /path/to/repo
 
 # With AI-powered analysis
-npx @kodus/agent-readiness . --ai --api-key sk-your-key
+pnpm dlx @danielboothcloud/agent-readiness . --ai --api-key sk-your-key
 
 # JSON output for integrations
-npx @kodus/agent-readiness . --format json
+pnpm dlx @danielboothcloud/agent-readiness . --format json
 
 # CI mode with minimum level gate
-npx @kodus/agent-readiness . --ci --min-level 3
+pnpm dlx @danielboothcloud/agent-readiness . --ci --min-level 3
 ```
 
 ---
@@ -172,13 +172,13 @@ Arguments:
 
 Options:
   --ai                   Enable AI-powered criteria evaluation
-  --api-key <key>        API key for AI evaluations (or set KODUS_API_KEY / OPENAI_API_KEY)
+  --api-key <key>        API key for AI evaluations (or set AGENT_READINESS_API_KEY / OPENAI_API_KEY)
   --ci                   Run in CI mode (non-interactive, exit code reflects level)
   --format <format>      Output format: "text" or "json" (default: "text")
   --min-level <n>        Minimum maturity level required (1-5). Exits with code 1 if below threshold
   --no-color             Disable colored output
   --no-web               Disable the web dashboard
-  --init                 Generate a .kodus-readiness.yml config file and exit
+  --init                 Generate a .agent-profile.yml config file and exit
   -V, --version          Show version number
   -h, --help             Show help
 ```
@@ -187,7 +187,7 @@ Options:
 
 | Variable | Description |
 |---|---|
-| `KODUS_API_KEY` | API key for AI-powered evaluations |
+| `AGENT_READINESS_API_KEY` | API key for AI-powered evaluations |
 | `OPENAI_API_KEY` | Fallback API key for AI evaluations |
 | `CI` | When set to `"true"`, automatically enables CI mode |
 
@@ -205,7 +205,7 @@ After running an evaluation, an interactive web dashboard opens automatically in
 To disable the dashboard, use the `--no-web` flag:
 
 ```bash
-bunx @kodus/agent-readiness . --no-web
+pnpm dlx @danielboothcloud/agent-readiness . --no-web
 ```
 
 ---
@@ -215,10 +215,10 @@ bunx @kodus/agent-readiness . --no-web
 Generate a default configuration file:
 
 ```bash
-bunx @kodus/agent-readiness --init
+pnpm dlx @danielboothcloud/agent-readiness --init
 ```
 
-This creates a `.kodus-readiness.yml` in your repository root:
+This creates a `.agent-profile.yml` in your repository root:
 
 ```yaml
 # Toggle entire pillars on or off
@@ -293,7 +293,7 @@ thresholds:
 
 # AI Settings
 # aiEnabled: false
-# apiKey: ""           # Or set KODUS_API_KEY env variable
+# apiKey: ""           # Or set AGENT_READINESS_API_KEY env variable
 # apiBaseUrl: ""       # Custom endpoint for the LLM API
 ```
 
@@ -303,7 +303,7 @@ CLI flags always override config file values.
 
 ## CI/CD Integration
 
-Use `@kodus/agent-readiness` as a quality gate in your CI pipeline. The `--ci` flag enables non-interactive mode, and `--min-level` fails the build if your codebase doesn't meet the required maturity level.
+Use `@danielboothcloud/agent-readiness` as a quality gate in your CI pipeline. The `--ci` flag enables non-interactive mode, and `--min-level` fails the build if your codebase doesn't meet the required maturity level.
 
 ### GitHub Actions
 
@@ -318,21 +318,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: latest
 
       - name: Check AI Agent Readiness
-        run: bunx @kodus/agent-readiness . --ci --min-level 3
+        run: pnpm dlx @danielboothcloud/agent-readiness . --ci --min-level 3
 ```
 
 ### With AI-Powered Analysis
 
 ```yaml
       - name: Check AI Agent Readiness (with AI)
-        run: bunx @kodus/agent-readiness . --ci --min-level 3 --ai
+        run: pnpm dlx @danielboothcloud/agent-readiness . --ci --min-level 3 --ai
         env:
-          KODUS_API_KEY: ${{ secrets.KODUS_API_KEY }}
+          AGENT_READINESS_API_KEY: ${{ secrets.AGENT_READINESS_API_KEY }}
 ```
 
 ### Exit Codes
@@ -359,14 +359,14 @@ Enable AI analysis:
 
 ```bash
 # Using --api-key flag
-bunx @kodus/agent-readiness . --ai --api-key sk-your-key
+pnpm dlx @danielboothcloud/agent-readiness . --ai --api-key sk-your-key
 
 # Using environment variable
-export KODUS_API_KEY=sk-your-key
-bunx @kodus/agent-readiness . --ai
+export AGENT_READINESS_API_KEY=sk-your-key
+pnpm dlx @danielboothcloud/agent-readiness . --ai
 ```
 
-Uses an OpenAI-compatible API. Configure a custom endpoint in `.kodus-readiness.yml`:
+Uses an OpenAI-compatible API. Configure a custom endpoint in `.agent-profile.yml`:
 
 ```yaml
 aiEnabled: true
