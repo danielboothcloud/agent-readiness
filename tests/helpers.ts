@@ -29,6 +29,8 @@ export function mockProjectInfo(overrides?: Partial<ProjectInfo>): ProjectInfo {
     detectedTypes: [],
     isMonorepo: false,
     packages: [],
+    workspaces: [],
+    knowledge: [],
     ...overrides,
   };
 }

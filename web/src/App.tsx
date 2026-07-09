@@ -4,7 +4,13 @@ import Dashboard from "./components/Dashboard";
 const MOCK_DATA: ReportData = {
   repoName: "example-repo",
   repoPath: "/path/to/example-repo",
-  projectInfo: { detectedTypes: ["node", "typescript"], isMonorepo: false, packages: [] },
+  projectInfo: {
+    detectedTypes: ["node", "typescript"],
+    isMonorepo: false,
+    packages: [],
+    workspaces: [],
+    knowledge: [],
+  },
   pillars: [
     {
       id: "style-linting",

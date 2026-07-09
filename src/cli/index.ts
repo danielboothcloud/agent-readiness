@@ -109,7 +109,7 @@ async function main(options: CLIOptions): Promise<void> {
     spinner.start("Detecting project type...");
 
     // e. Run detectProject
-    const projectInfo = await detectProject(repoPath);
+    const projectInfo = await detectProject(repoPath, config);
 
     // f-g. Create AnalysisEngine with filtered pillars and spinner callbacks
     const engine = new AnalysisEngine(pillars, repoPath, projectInfo, {

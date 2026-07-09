@@ -14,6 +14,16 @@ export interface ProjectInfo {
   detectedTypes: string[];
   isMonorepo: boolean;
   packages: string[];
+  workspaces: ProjectWorkspaceInfo[];
+  knowledge: string[];
+}
+
+export interface ProjectWorkspaceInfo {
+  name: string;
+  path: string;
+  description?: string;
+  detectedTypes: string[];
+  knowledge: string[];
 }
 
 export interface CriterionResult {
@@ -89,11 +99,23 @@ export interface ReportData {
 export interface Config {
   pillars?: Record<string, boolean>;
   criteria?: Record<string, boolean>;
+  workspaces?: ConfigWorkspace[];
+  knowledge?: string | string[];
   thresholds?: Record<string, number>;
   aiEnabled?: boolean;
   apiKey?: string;
   apiBaseUrl?: string;
 }
+
+export type ConfigWorkspace =
+  | string
+  | {
+      name?: string;
+      path: string;
+      description?: string;
+      languages?: string[];
+      knowledge?: string | string[];
+    };
 
 export interface CLIOptions {
   path: string;

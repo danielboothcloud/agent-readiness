@@ -119,6 +119,37 @@ criteria:
   security-policy: true
   dep-update-automation: true
 
+# ── Workspaces ───────────────────────────────────────────────
+# Declare nested codebases when the repository root is a coordination layer
+# rather than a package root. Each workspace is scanned as an additional root;
+# a criterion passes if it passes at the repo root or in any configured
+# workspace.
+#
+# The detector has opinionated defaults for common ecosystems:
+# JavaScript/TypeScript, Python, Go, Rust, JVM, .NET, Ruby, PHP, Swift, and
+# infrastructure-as-code. Use "languages" to add explicit labels when a repo
+# uses uncommon framework conventions or generated manifests.
+workspaces:
+  # - name: worker
+  #   path: worker
+  #   description: Python Temporal worker
+  #   languages: [python]
+  #   knowledge:
+  #     - Owns workflows, agents, and tool integrations.
+  # - name: frontend
+  #   path: apps/frontend
+  #   description: JavaScript/TypeScript app or service
+  #   languages: [node, typescript] # optional extra tags: react, nextjs, nestjs, hono, express, bun, deno
+
+# ── Project Knowledge ────────────────────────────────────────
+# Static business or architecture context that should travel with the report.
+# This is background knowledge only; live health/state should still come from
+# source systems and metrics.
+knowledge:
+  # - This repo optimizes for Locality of Behaviour.
+  # - Keep shared platform substrate generic; workload details belong in
+  #   owning agents/toolsets.
+
 # ── Thresholds ───────────────────────────────────────────────
 # Override the scoring thresholds used when computing maturity
 # levels. Values are expressed as decimals between 0 and 1.

@@ -12,6 +12,14 @@ export interface ProjectInfo {
   detectedTypes: string[];
   isMonorepo: boolean;
   packages: string[];
+  workspaces: Array<{
+    name: string;
+    path: string;
+    description?: string;
+    detectedTypes: string[];
+    knowledge: string[];
+  }>;
+  knowledge: string[];
 }
 
 export interface CriterionResult {

@@ -3,7 +3,9 @@ import type {
   ProjectInfo,
   CriterionResult,
   LLMClient,
+  ProjectWorkspaceInfo,
 } from "../types/index.js";
+import path from "node:path";
 
 export type OnPillarStart = (pillar: Pillar) => void;
 export type OnPillarComplete = (
@@ -75,11 +77,30 @@ export class AnalysisEngine {
     }
 
     try {
-      return await criterion.check(
+      const rootResult = await criterion.check(
         this.repoPath,
         this.projectInfo,
         this.llmClient,
       );
+      if (rootResult.pass || this.projectInfo.workspaces.length === 0) {
+        return rootResult;
+      }
+
+      for (const workspace of this.projectInfo.workspaces) {
+        const workspaceResult = await criterion.check(
+          path.resolve(this.repoPath, workspace.path),
+          this.workspaceProjectInfo(workspace),
+          this.llmClient,
+        );
+        if (workspaceResult.pass) {
+          return {
+            ...workspaceResult,
+            message: `[${workspace.name}] ${workspaceResult.message}`,
+          };
+        }
+      }
+
+      return rootResult;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -89,5 +110,15 @@ export class AnalysisEngine {
         message: `Check failed: ${errorMessage}`,
       };
     }
+  }
+
+  private workspaceProjectInfo(workspace: ProjectWorkspaceInfo): ProjectInfo {
+    return {
+      detectedTypes: workspace.detectedTypes,
+      isMonorepo: false,
+      packages: [],
+      workspaces: [],
+      knowledge: [...this.projectInfo.knowledge, ...workspace.knowledge],
+    };
   }
 }
