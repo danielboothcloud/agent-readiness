@@ -14,7 +14,7 @@
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/ tests/",
-    "build": "tsup src/index.ts --format esm --target node20 --out-dir dist --clean --dts false",
+    "build": "tsup src/index.ts --format esm --target node20 --out-dir dist --clean --no-dts",
     "build:web": "pnpm --dir web install --frozen-lockfile && pnpm --dir web run build",
     "build:all": "pnpm run build && pnpm run build:web",
     "prepublishOnly": "pnpm run build:all",
