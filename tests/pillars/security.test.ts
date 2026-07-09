@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from "bun:test";
+import { describe, test, expect, afterEach } from "vitest";
 import security from "../../src/pillars/security.js";
 import {
   createTestDir,

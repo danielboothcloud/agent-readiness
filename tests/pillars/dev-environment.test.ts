@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from "bun:test";
+import { describe, test, expect, afterEach } from "vitest";
 import devEnvironment from "../../src/pillars/dev-environment.js";
 import {
   createTestDir,
@@ -86,6 +86,12 @@ describe("version-pinned", () => {
       "package.json": '{"engines":{"bun":">=1.2.0"}}',
     });
     const r = await versionPinnedCheck(dir, mockProjectInfo({ detectedTypes: ["node"] }));
+    expect(r.pass).toBe(true);
+  });
+
+  test("mise: mise.toml", async () => {
+    const dir = await make("mise-ver", { "mise.toml": "[tools]\nbun = '1.3.14'\n" });
+    const r = await versionPinnedCheck(dir, mockProjectInfo());
     expect(r.pass).toBe(true);
   });
 

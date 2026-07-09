@@ -219,7 +219,7 @@ const devEnvironment: Pillar = {
       id: "version-pinned",
       name: "Runtime version pinned",
       description:
-        "The runtime/language version is pinned (.nvmrc, .python-version, .tool-versions, go.mod).",
+        "The runtime/language version is pinned (.nvmrc, .python-version, .tool-versions, mise.toml, go.mod).",
       pillarId: "dev-environment",
       level: 2,
       requiresLLM: false,
@@ -230,6 +230,7 @@ const devEnvironment: Pillar = {
           ".node-version",
           ".python-version",
           ".tool-versions",
+          "mise.toml",
           ".mise.toml",
           "go.mod",
           ".sdkmanrc",
@@ -278,7 +279,7 @@ const devEnvironment: Pillar = {
           pass: false,
           message: "No runtime version pinning found.",
           details:
-            "Add .nvmrc, .python-version, .tool-versions, or .mise.toml to pin runtime versions.",
+            "Add .nvmrc, .python-version, .tool-versions, mise.toml, or .mise.toml to pin runtime versions.",
         };
       },
     },

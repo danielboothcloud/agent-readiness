@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from "bun:test";
+import { describe, test, expect, afterEach } from "vitest";
 import ciCd from "../../src/pillars/ci-cd.js";
 import {
   createTestDir,

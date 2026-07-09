@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from "bun:test";
+import { describe, test, expect, afterEach } from "vitest";
 import styleLinting from "../../src/pillars/style-linting.js";
 import {
   createTestDir,

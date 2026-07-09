@@ -10,15 +10,15 @@
     "dist"
   ],
   "scripts": {
-    "test": "bun test",
-    "dev": "bun run src/index.ts",
-    "typecheck": "bun x tsc --noEmit",
-    "lint": "bun x biome check src/",
-    "build": "bun build src/index.ts --outdir dist --target node",
-    "build:web": "cd web && bun install && bun run build",
-    "build:all": "bun run build && bun run build:web",
-    "prepublishOnly": "bun run build:all",
-    "dev:web": "cd web && bun install && bun run dev"
+    "test": "vitest run",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/ tests/",
+    "build": "tsup src/index.ts --format esm --target node20 --out-dir dist --clean --dts false",
+    "build:web": "pnpm --dir web install --frozen-lockfile && pnpm --dir web run build",
+    "build:all": "pnpm run build && pnpm run build:web",
+    "prepublishOnly": "pnpm run build:all",
+    "dev:web": "pnpm --dir web install && pnpm --dir web run dev"
   },
   "publishConfig": {
     "access": "public"
@@ -32,8 +32,10 @@
     "cli",
     "kodus"
   ],
+  "packageManager": "pnpm@11.6.0",
   "engines": {
-    "bun": ">=1.0.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=11.0.0"
   },
   "license": "MIT",
   "dependencies": {
@@ -46,7 +48,11 @@
     "yaml": "^2.7.0"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5.7.0"
+    "@biomejs/biome": "^2.3.8",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
   }
 }

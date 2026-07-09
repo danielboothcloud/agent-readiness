@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from "bun:test";
+import { describe, test, expect, afterEach } from "vitest";
 import { detectProject } from "../../src/engine/detector.js";
 import { createTestDir, cleanup, writeFixtures } from "../helpers.js";
 

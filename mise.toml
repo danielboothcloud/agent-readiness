@@ -1,0 +1,13 @@
+[tools]
+node = "22"
+pnpm = "latest"
+
+[tasks.publish]
+description = "Run release checks and publish the package to npm"
+run = [
+  "pnpm install --frozen-lockfile",
+  "pnpm test",
+  "pnpm run typecheck",
+  "pnpm run build:all",
+  "pnpm publish --access public",
+]

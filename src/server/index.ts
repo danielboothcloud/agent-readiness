@@ -6,9 +6,6 @@ import { exec } from "node:child_process";
 import type { SerializedReportData } from "../engine/serializer.js";
 
 function getCurrentDir(): string {
-  // Bun provides import.meta.dir, Node uses import.meta.dirname (21+) or fileURLToPath
-  if (typeof import.meta.dir === "string") return import.meta.dir;
-  if (typeof import.meta.dirname === "string") return import.meta.dirname;
   return path.dirname(fileURLToPath(import.meta.url));
 }
 
@@ -57,7 +54,7 @@ export async function startServer(reportData: SerializedReportData): Promise<{
 
   if (!fs.existsSync(indexPath)) {
     throw new Error(
-      `Web dashboard not built. Run "bun run build:web" first.\n` +
+      `Web dashboard not built. Run "pnpm run build:web" first.\n` +
         `Expected files at: ${DIST_WEB_DIR}`,
     );
   }

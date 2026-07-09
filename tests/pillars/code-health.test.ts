@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from "bun:test";
+import { describe, test, expect, afterEach } from "vitest";
 import codeHealth from "../../src/pillars/code-health.js";
 import {
   createTestDir,

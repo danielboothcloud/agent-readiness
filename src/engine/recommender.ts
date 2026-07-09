@@ -144,7 +144,7 @@ const CRITERION_INFO: Record<
   },
   "version-pinned": {
     description:
-      "Pin the runtime version with .nvmrc, .node-version, .python-version, .tool-versions, or .mise.toml",
+      "Pin the runtime version with .nvmrc, .node-version, .python-version, .tool-versions, mise.toml, or .mise.toml",
     reason:
       "Pinned runtime versions prevent agents from hitting version incompatibilities during execution",
   },
