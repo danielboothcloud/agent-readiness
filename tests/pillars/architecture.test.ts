@@ -28,7 +28,9 @@ const harness = getCheck(architecture, "agent-harness-rules");
 
 describe("methodology-documented", () => {
   test("passes with docs/agent-readiness.md", async () => {
-    const dir = await make("meth-ar", { "docs/agent-readiness.md": "# readiness" });
+    const dir = await make("meth-ar", {
+      "docs/agent-readiness.md": "# readiness",
+    });
     expect((await methodology(dir, mockProjectInfo())).pass).toBe(true);
   });
   test("passes with ARCHITECTURE.md", async () => {
@@ -62,6 +64,18 @@ describe("agent-harness-rules", () => {
   test("passes with .pi/readiness.rules.json", async () => {
     const dir = await make("harness", { ".pi/readiness.rules.json": "{}" });
     expect((await harness(dir, mockProjectInfo())).pass).toBe(true);
+  });
+  test("passes with pi-warden.md", async () => {
+    const dir = await make("harness-warden", {
+      "pi-warden.md": "## Keep domain free of IO",
+    });
+    expect((await harness(dir, mockProjectInfo())).pass).toBe(true);
+  });
+  test("fails with only an arbitrary pi extension", async () => {
+    const dir = await make("harness-ext", {
+      ".pi/extensions/x.ts": "export default () => {};",
+    });
+    expect((await harness(dir, mockProjectInfo())).pass).toBe(false);
   });
   test("fails empty", async () => {
     const dir = await make("harness-empty");

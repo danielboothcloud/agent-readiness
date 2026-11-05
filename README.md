@@ -380,10 +380,10 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 
 ## All Checks
 
-**39 checks** across **7 pillars**, covering **10+ languages** (Node.js, Python, Go, Rust, Java, Kotlin, C#, Ruby, PHP, Swift). 4 checks use optional AI analysis for deeper evaluation.
+**45 checks** across **9 pillars**, covering **10+ languages** (Node.js, Python, Go, Rust, Java, Kotlin, C#, Ruby, PHP, Swift). 4 checks use optional AI analysis for deeper evaluation.
 
 <details>
-<summary><strong>View all 39 criteria across 7 pillars</strong></summary>
+<summary><strong>View all 45 criteria across 9 pillars</strong></summary>
 
 ### 🎨 Style & Linting
 
@@ -458,6 +458,23 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 | `dep-update-automation` | 3 | No | Dependabot, Renovate, Gradle versions plugin |
 | `security-scanning` | 4 | No | CodeQL, Snyk, Trivy, Semgrep, SonarQube, OWASP dependency-check, cargo-audit, SecurityCodeScan (C#), brakeman/bundler-audit (Ruby), roave/security-advisories (PHP) |
 | `secrets-detection` | 4 | No | gitleaks, detect-secrets in pre-commit or CI |
+
+### 🏛️ Architecture & Methodology
+
+| Criterion | Level | AI | What It Detects |
+|---|---|---|---|
+| `methodology-documented` | 2 | No | Declared code-organisation methodology (ARCHITECTURE.md, docs/agent-readiness.md, ADRs) |
+| `boundary-enforcement` | 3 | No | import-linter, dependency-cruiser, eslint-plugin-boundaries, go-arch-lint, depguard, ArchUnit, tflint |
+| `agent-harness-rules` | 3 | No | Agent rules files mirroring CI structure rules: `.pi/readiness.rules.json`, `pi-warden.md` |
+
+### 🧠 Agent Context & Capabilities
+
+| Criterion | Level | AI | What It Detects |
+|---|---|---|---|
+| `ai-context-file` | 2 | No | CLAUDE.md, AGENTS.md, GEMINI.md, .cursorrules, .cursor/rules, copilot-instructions.md, project-context.md |
+| `mcp-servers` | 3 | No | `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `mcpServers` in settings |
+| `agent-skills` | 3 | No | `.claude/skills`, `.agents/skills`, `.claude/commands`, `.cursor/commands`, pi packages/extensions |
+| `agent-guardrails` | 3 | No | Committed agent hooks/permissions: `hooks` or `permissions.deny/ask` in `.claude/settings.json`, `.cursor/hooks.json`, `.codex/hooks.json` / `[hooks]` in `.codex/config.toml`, `hooks` in `.gemini/settings.json`, pi `.pi/hook/hooks.yaml`, `.pi/aio-blocklist.json`, `.pi/pi-warden.json`, blocking `.pi/extensions` (`tool_call` → `block: true`). User-level configs don't count. |
 
 </details>
 

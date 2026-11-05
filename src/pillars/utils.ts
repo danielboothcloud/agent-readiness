@@ -15,11 +15,16 @@ export async function fileExists(
         dot: true,
       });
       if (matches.length > 0) return matches[0];
-    } else {
-      if (existsSync(join(repoPath, pattern))) return pattern;
-    }
+    } else if (existsSync(join(repoPath, pattern))) return pattern;
   }
   return null;
+}
+
+export async function findFiles(
+  repoPath: string,
+  pattern: string,
+): Promise<string[]> {
+  return fg(pattern, { cwd: repoPath, absolute: false, dot: true });
 }
 
 export async function readFileContent(
@@ -42,10 +47,13 @@ export async function packageJsonHas(
   try {
     const pkg = JSON.parse(content);
     return (
-      key.split(".").reduce((obj: Record<string, unknown> | undefined, k) => {
-        if (obj === undefined || obj === null) return undefined;
-        return obj[k] as Record<string, unknown> | undefined;
-      }, pkg as Record<string, unknown>) !== undefined
+      key.split(".").reduce(
+        (obj: Record<string, unknown> | undefined, k) => {
+          if (obj === undefined || obj === null) return undefined;
+          return obj[k] as Record<string, unknown> | undefined;
+        },
+        pkg as Record<string, unknown>,
+      ) !== undefined
     );
   } catch {
     return false;

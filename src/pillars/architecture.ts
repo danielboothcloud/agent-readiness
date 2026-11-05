@@ -77,27 +77,53 @@ const architecture: Pillar = {
         // import-linter declared inline in Python config.
         const pyproject = await readFileContent(repoPath, "pyproject.toml");
         if (pyproject && pyproject.includes("importlinter")) {
-          return { criterionId: "boundary-enforcement", pass: true, message: "import-linter configured in pyproject.toml" };
+          return {
+            criterionId: "boundary-enforcement",
+            pass: true,
+            message: "import-linter configured in pyproject.toml",
+          };
         }
         const setupCfg = await readFileContent(repoPath, "setup.cfg");
         if (setupCfg && setupCfg.includes("importlinter")) {
-          return { criterionId: "boundary-enforcement", pass: true, message: "import-linter configured in setup.cfg" };
+          return {
+            criterionId: "boundary-enforcement",
+            pass: true,
+            message: "import-linter configured in setup.cfg",
+          };
         }
 
         // depguard boundary rules inside golangci-lint config.
         for (const f of [".golangci.yml", ".golangci.yaml"]) {
           const c = await readFileContent(repoPath, f);
           if (c && c.includes("depguard")) {
-            return { criterionId: "boundary-enforcement", pass: true, message: `depguard boundary rules configured in ${f}` };
+            return {
+              criterionId: "boundary-enforcement",
+              pass: true,
+              message: `depguard boundary rules configured in ${f}`,
+            };
           }
         }
 
         // eslint import-boundary rules.
-        const eslint = await fileExists(repoPath, ".eslintrc", ".eslintrc.*", "eslint.config.*");
+        const eslint = await fileExists(
+          repoPath,
+          ".eslintrc",
+          ".eslintrc.*",
+          "eslint.config.*",
+        );
         if (eslint) {
           const c = await readFileContent(repoPath, eslint);
-          if (c && (c.includes("boundaries") || c.includes("no-restricted-paths") || c.includes("import/no-restricted-paths"))) {
-            return { criterionId: "boundary-enforcement", pass: true, message: `Import boundary rules configured in ${eslint}` };
+          if (
+            c &&
+            (c.includes("boundaries") ||
+              c.includes("no-restricted-paths") ||
+              c.includes("import/no-restricted-paths"))
+          ) {
+            return {
+              criterionId: "boundary-enforcement",
+              pass: true,
+              message: `Import boundary rules configured in ${eslint}`,
+            };
           }
         }
 
@@ -105,7 +131,11 @@ const architecture: Pillar = {
         for (const f of ["build.gradle.kts", "build.gradle", "pom.xml"]) {
           const c = await readFileContent(repoPath, f);
           if (c && c.toLowerCase().includes("archunit")) {
-            return { criterionId: "boundary-enforcement", pass: true, message: `ArchUnit configured in ${f}` };
+            return {
+              criterionId: "boundary-enforcement",
+              pass: true,
+              message: `ArchUnit configured in ${f}`,
+            };
           }
         }
 
@@ -122,15 +152,17 @@ const architecture: Pillar = {
       id: "agent-harness-rules",
       name: "Agent harness enforcement rules",
       description:
-        "Coding agents get the same structure rules the CI enforces, via a harness rules file (.pi/readiness.rules.json or equivalent).",
+        "Coding agents get the same structure rules the CI enforces, via a harness rules file (.pi/readiness.rules.json, pi-warden.md or equivalent).",
       pillarId: "architecture",
       level: 3,
       requiresLLM: false,
       check: async (repoPath) => {
+        // Rules files only. Hooks / permissions / blocking extensions are scored by the
+        // context pillar's agent-guardrails, and any pi extension by agent-skills.
         const found = await fileExists(
           repoPath,
           ".pi/readiness.rules.json",
-          ".pi/extensions/*.ts",
+          "pi-warden.md",
         );
         if (found) {
           return {
@@ -144,7 +176,7 @@ const architecture: Pillar = {
           pass: false,
           message: "No agent harness enforcement rules found.",
           details:
-            "Add .pi/readiness.rules.json (or your harness's equivalent) so coding agents get the same block-paths and feedback loop that CI enforces.",
+            "Add .pi/readiness.rules.json or a pi-warden.md (or your harness's equivalent) so coding agents get the same block-paths and feedback loop that CI enforces.",
         };
       },
     },

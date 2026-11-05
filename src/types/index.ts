@@ -127,6 +127,8 @@ export interface CLIOptions {
   noColor: boolean;
   init: boolean;
   web: boolean;
+  /** Path of checklist file to write (.md or .txt). */
+  checklist?: string;
 }
 
 export interface RenderOptions {
@@ -135,5 +137,8 @@ export interface RenderOptions {
 }
 
 export interface LLMClient {
-  evaluate(prompt: string, context: string): Promise<{ pass: boolean; message: string; details?: string }>;
+  evaluate(
+    prompt: string,
+    context: string,
+  ): Promise<{ pass: boolean; message: string; details?: string }>;
 }

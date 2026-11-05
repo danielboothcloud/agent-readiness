@@ -11,7 +11,16 @@ import { calculatePillarScores, calculateLevel } from "../engine/scorer.js";
 import { generateRecommendations } from "../engine/recommender.js";
 import { ALL_PILLARS } from "../pillars/index.js";
 import { renderReport } from "../renderer/index.js";
-import { DEFAULT_CONFIG_FILENAME, loadConfig, generateDefaultConfig } from "../engine/config.js";
+import {
+  DEFAULT_CHECKLIST_FILENAME,
+  checklistFormatFromPath,
+  renderChecklist,
+} from "../renderer/checklist.js";
+import {
+  DEFAULT_CONFIG_FILENAME,
+  loadConfig,
+  generateDefaultConfig,
+} from "../engine/config.js";
 import { createLLMClient } from "../engine/llm-client.js";
 import { serializeReport } from "../engine/serializer.js";
 import { startServer, openBrowser } from "../server/index.js";
@@ -60,9 +69,7 @@ async function main(options: CLIOptions): Promise<void> {
         // File doesn't exist, good to create
       }
       await fs.writeFile(configPath, generateDefaultConfig(), "utf-8");
-      console.log(
-        chalk.green(`Created config file: ${configPath}`),
-      );
+      console.log(chalk.green(`Created config file: ${configPath}`));
       return;
     }
 
@@ -102,9 +109,7 @@ async function main(options: CLIOptions): Promise<void> {
     if (config.criteria) {
       pillars = pillars.map((p) => ({
         ...p,
-        criteria: p.criteria.filter(
-          (c) => config.criteria![c.id] !== false,
-        ),
+        criteria: p.criteria.filter((c) => config.criteria![c.id] !== false),
       }));
     }
 
@@ -166,15 +171,26 @@ async function main(options: CLIOptions): Promise<void> {
       renderReport(reportData, { noColor: options.noColor, ci: isCI });
     }
 
+    // Write checklist file if requested
+    if (options.checklist) {
+      const checklistPath = path.resolve(options.checklist);
+      const checklist = renderChecklist(
+        reportData,
+        checklistFormatFromPath(checklistPath),
+      );
+      await fs.writeFile(checklistPath, checklist, "utf-8");
+      // Keep stdout clean for JSON consumers
+      const log = isJSON ? console.error : console.log;
+      log(chalk.green(`Checklist written to ${checklistPath}`));
+    }
+
     // p. If --web flag is set, start the dashboard server
     if (options.web) {
       const serialized = serializeReport(reportData);
       try {
         const { url } = await startServer(serialized);
         console.log("");
-        console.log(
-          chalk.bold.cyan("  Dashboard: ") + chalk.underline(url),
-        );
+        console.log(chalk.bold.cyan("  Dashboard: ") + chalk.underline(url));
         console.log(chalk.dim("  Press Ctrl+C to stop the server."));
         console.log("");
         await openBrowser(url);
@@ -214,12 +230,24 @@ export function run(): void {
     .argument("[path]", "Path to the repository to evaluate", process.cwd())
     .option("--ai", "Enable AI-powered criteria evaluation", false)
     .option("--api-key <key>", "API key for AI evaluations")
-    .option("--ci", "Run in CI mode (non-interactive, exit code reflects level)", false)
+    .option(
+      "--ci",
+      "Run in CI mode (non-interactive, exit code reflects level)",
+      false,
+    )
     .option("--format <format>", "Output format (text or json)", "text")
     .option("--min-level <n>", "Minimum maturity level to pass (1-5)")
     .option("--no-color", "Disable colored output")
-    .option("--init", `Generate a ${DEFAULT_CONFIG_FILENAME} config file`, false)
+    .option(
+      "--init",
+      `Generate a ${DEFAULT_CONFIG_FILENAME} config file`,
+      false,
+    )
     .option("--no-web", "Disable the web dashboard")
+    .option(
+      "--checklist [file]",
+      `Write a checklist file (.md or .txt; default ${DEFAULT_CHECKLIST_FILENAME})`,
+    )
     .action(async (pathArg: string, opts: Record<string, unknown>) => {
       const cliOptions: CLIOptions = {
         path: pathArg,
@@ -227,10 +255,15 @@ export function run(): void {
         apiKey: opts.apiKey as string | undefined,
         ci: Boolean(opts.ci),
         format: (opts.format as "text" | "json") ?? "text",
-        minLevel: opts.minLevel !== undefined ? Number(opts.minLevel) : undefined,
+        minLevel:
+          opts.minLevel === undefined ? undefined : Number(opts.minLevel),
         noColor: !opts.color,
         init: Boolean(opts.init),
         web: opts.web !== false,
+        checklist:
+          opts.checklist === true
+            ? DEFAULT_CHECKLIST_FILENAME
+            : (opts.checklist as string | undefined),
       };
 
       await main(cliOptions);
