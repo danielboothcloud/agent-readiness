@@ -1,5 +1,11 @@
 import type { Pillar } from "../types/index.js";
-import { fileExists, findFiles, readFileContent } from "./utils.js";
+import {
+  fileExists,
+  findFiles,
+  piPackageMatches,
+  piPackageSources,
+  readFileContent,
+} from "./utils.js";
 
 // The subset of harness settings files (Claude Code / Cursor / Codex / Gemini CLI)
 // that the guardrails check reads.
@@ -25,6 +31,12 @@ function declaresHooks(content: string): boolean {
   const settings = parseSettings(content);
   if (settings) return Object.keys(settings.hooks ?? {}).length > 0;
   return /"hooks"\s*:\s*\{\s*"/.test(content);
+}
+
+// True when a hooks config wires a post-edit event (lint/typecheck feedback after a write).
+// Claude Code / Codex: PostToolUse, Cursor: afterFileEdit, Gemini CLI: AfterTool.
+function declaresPostEditHook(content: string): boolean {
+  return /"(PostToolUse|afterFileEdit|AfterTool)"\s*:/.test(content);
 }
 
 // Claude Code: deny/ask permission rules restrict what the agent may run unprompted.
@@ -103,6 +115,7 @@ const context: Pillar = {
       check: async (repoPath) => {
         const found = await fileExists(
           repoPath,
+          ".pi/mcp.json",
           ".mcp.json",
           ".cursor/mcp.json",
           ".vscode/mcp.json",
@@ -135,7 +148,7 @@ const context: Pillar = {
           pass: false,
           message: "No MCP servers / connectors configured.",
           details:
-            "If the codebase needs external context (DB, API, domain tools), declare the MCP servers/connectors (.mcp.json or an mcpServers block) so agents can reach them. Skip only if genuinely none are needed.",
+            "If the codebase needs external context (DB, API, domain tools), declare the MCP servers so agents can reach them: .pi/mcp.json for pi, .mcp.json for Claude Code, .cursor/mcp.json, or an mcpServers block. Skip only if genuinely none are needed.",
         };
       },
     },
@@ -150,15 +163,17 @@ const context: Pillar = {
       check: async (repoPath) => {
         const found = await fileExists(
           repoPath,
-          ".claude/skills/**",
-          ".agents/skills/**",
-          ".claude/commands/**",
-          ".cursor/commands/**",
-          "pi.json",
-          "pi.config.ts",
-          ".pi/config.json",
-          ".pi/packages.json",
+          // pi (project scope) + cross-harness Agent Skills
           ".pi/extensions/**",
+          ".pi/skills/**",
+          ".pi/prompts/*.md",
+          ".agents/skills/**",
+          // Claude Code, Cursor, Gemini CLI
+          ".claude/skills/**",
+          ".claude/commands/**",
+          ".claude/agents/**",
+          ".cursor/commands/**",
+          ".gemini/commands/**",
         );
         if (found) {
           return {
@@ -167,12 +182,23 @@ const context: Pillar = {
             message: `Agent skills/packages found: ${found}`,
           };
         }
+        // pi packages declared for the project (`pi install -l` writes .pi/settings.json).
+        const packages = piPackageSources(
+          await readFileContent(repoPath, ".pi/settings.json"),
+        );
+        if (packages.length > 0) {
+          return {
+            criterionId: "agent-skills",
+            pass: true,
+            message: `pi packages declared in .pi/settings.json: ${packages.join(", ")}`,
+          };
+        }
         return {
           criterionId: "agent-skills",
           pass: false,
           message: "No repo-scoped agent skills or packages found.",
           details:
-            "Add skills/commands (.claude/skills, .agents/skills, .claude/commands) or pi packages/extensions (.pi/, pi install npm:<pkg>) for codebase-specific workflows agents should reuse.",
+            "Commit codebase-specific capabilities: pi packages (`pi install -l npm:<pkg>` writes .pi/settings.json), .pi/extensions, .pi/prompts or .agents/skills; or .claude/skills|commands|agents, .cursor/commands, .gemini/commands.",
         };
       },
     },
@@ -221,6 +247,15 @@ const context: Pillar = {
           if (await fileExists(repoPath, f)) found.push(f);
         }
 
+        // pi-warden installed as a project package runs its offline guards (holds on
+        // irreversible commands) in every session, even before a project config exists.
+        const piPackages = piPackageSources(
+          await readFileContent(repoPath, ".pi/settings.json"),
+        );
+        if (piPackages.some((p) => piPackageMatches(p, "pi-warden"))) {
+          found.push(".pi/settings.json (pi-warden package)");
+        }
+
         // pi extensions that block tool calls (pi.on("tool_call") → { block: true }).
         const extensions = await findFiles(
           repoPath,
@@ -244,7 +279,65 @@ const context: Pillar = {
           message:
             "No repo-scoped agent guardrails (hooks / permissions) found.",
           details:
-            "Commit hooks or permission rules so every agent session on this repo is guarded: hooks or permissions.deny/ask in .claude/settings.json, .cursor/hooks.json, .codex/hooks.json, hooks in .gemini/settings.json, or pi's .pi/hook/hooks.yaml, .pi/aio-blocklist.json or .pi/pi-warden.json. User-level configs (~/.claude, ~/.pi/agent, pi-warden's user config) and .claude/settings.local.json are per-machine and don't count.",
+            "Commit hooks or permission rules so every agent session on this repo is guarded. pi: `pi install -l npm:pi-warden` (holds irreversible commands) plus .pi/pi-warden.json, or .pi/aio-blocklist.json / .pi/hook/hooks.yaml. Others: hooks or permissions.deny/ask in .claude/settings.json, .cursor/hooks.json, .codex/hooks.json, or hooks in .gemini/settings.json. User-level configs (~/.claude, ~/.pi/agent, pi-warden's user config) and .claude/settings.local.json are per-machine and don't count.",
+        };
+      },
+    },
+    {
+      id: "agent-edit-feedback",
+      name: "In-edit code feedback for agents",
+      description:
+        "Agents get lint/type/structural diagnostics right after each edit, not only in CI: pi-lens (project config, project ast-grep/tree-sitter rules, or project package) or post-edit hooks (Claude Code / Codex PostToolUse, Cursor afterFileEdit, Gemini CLI AfterTool).",
+      pillarId: "context",
+      level: 3,
+      requiresLLM: false,
+      check: async (repoPath) => {
+        const found: string[] = [];
+
+        // pi-lens: project config, project rules (merged with built-ins), or the package
+        // declared for the project so every collaborator's pi loads it.
+        const lensFile = await fileExists(
+          repoPath,
+          ".pi-lens.json",
+          "rules/ast-grep-rules/rules/**/*.{yml,yaml}",
+          "rules/tree-sitter-queries/**/*.{yml,yaml}",
+        );
+        if (lensFile) found.push(`${lensFile} (pi-lens)`);
+        const piPackages = piPackageSources(
+          await readFileContent(repoPath, ".pi/settings.json"),
+        );
+        if (piPackages.some((p) => piPackageMatches(p, "pi-lens"))) {
+          found.push(".pi/settings.json (pi-lens package)");
+        }
+
+        // Post-edit hooks in other harnesses.
+        for (const f of [
+          ".claude/settings.json",
+          ".codex/hooks.json",
+          ".cursor/hooks.json",
+          ".gemini/settings.json",
+        ]) {
+          const c = await readFileContent(repoPath, f);
+          if (c && declaresPostEditHook(c)) found.push(`${f} (post-edit hook)`);
+        }
+        const codexToml = await readFileContent(repoPath, ".codex/config.toml");
+        if (codexToml && /PostToolUse/.test(codexToml)) {
+          found.push(".codex/config.toml (post-edit hook)");
+        }
+
+        if (found.length > 0) {
+          return {
+            criterionId: "agent-edit-feedback",
+            pass: true,
+            message: `In-edit feedback configured: ${found.join(", ")}`,
+          };
+        }
+        return {
+          criterionId: "agent-edit-feedback",
+          pass: false,
+          message: "No in-edit code feedback for agents found.",
+          details:
+            "pi: `pi install -l npm:pi-lens` (LSP + lint + ast-grep after every write) and add codebase rules under rules/ast-grep-rules/rules/ or a .pi-lens.json. Others: a PostToolUse hook running lint/typecheck in .claude/settings.json or .codex/hooks.json, afterFileEdit in .cursor/hooks.json, AfterTool in .gemini/settings.json.",
         };
       },
     },

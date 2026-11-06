@@ -119,6 +119,8 @@ export class AnalysisEngine {
       packages: [],
       workspaces: [],
       knowledge: [...this.projectInfo.knowledge, ...workspace.knowledge],
+      harnesses: this.projectInfo.harnesses,
+      harnessSource: this.projectInfo.harnessSource,
     };
   }
 }

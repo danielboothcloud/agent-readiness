@@ -27,6 +27,59 @@ export async function findFiles(
   return fg(pattern, { cwd: repoPath, absolute: false, dot: true });
 }
 
+const VENDOR_IGNORE = [
+  "**/node_modules/**",
+  "**/.git/**",
+  "**/vendor/**",
+  "**/dist/**",
+  "**/.venv/**",
+  "**/.terraform/**",
+];
+
+/** Like findFiles, but skips dependency/build dirs — for repo-wide `**` globs. */
+export async function findRepoFiles(
+  repoPath: string,
+  pattern: string | string[],
+): Promise<string[]> {
+  return fg(pattern, {
+    cwd: repoPath,
+    absolute: false,
+    dot: true,
+    ignore: VENDOR_IGNORE,
+  });
+}
+
+// A pi `packages` entry is either a source string or `{ source, ...filters }`.
+function packageSource(entry: unknown): string {
+  if (typeof entry === "string") return entry;
+  if (entry && typeof entry === "object" && "source" in entry) {
+    return String((entry as { source: unknown }).source);
+  }
+  return "";
+}
+
+/** Package sources declared in a pi settings file (`.pi/settings.json`). */
+export function piPackageSources(settingsContent: string | null): string[] {
+  if (!settingsContent) return [];
+  try {
+    const parsed = JSON.parse(settingsContent) as { packages?: unknown };
+    if (!Array.isArray(parsed.packages)) return [];
+    return parsed.packages.map(packageSource).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** True when a pi package source refers to the named package (npm:, git:, path). */
+export function piPackageMatches(source: string, name: string): boolean {
+  const s = source.toLowerCase();
+  return (
+    s === `npm:${name}` ||
+    s.startsWith(`npm:${name}@`) ||
+    new RegExp(`[/:]${name}(\\.git)?([@#].*)?$`).test(s)
+  );
+}
+
 export async function readFileContent(
   repoPath: string,
   filePath: string,

@@ -8,6 +8,21 @@ export const LEVEL_LABELS: Record<MaturityLevel, string> = {
   5: "Autonomous",
 };
 
+export type HarnessId = "pi" | "claude" | "codex" | "cursor" | "gemini";
+
+export const HARNESS_LABELS: Record<HarnessId, string> = {
+  pi: "pi",
+  claude: "Claude Code",
+  codex: "Codex",
+  cursor: "Cursor",
+  gemini: "Gemini CLI",
+};
+
+export interface HarnessAdvice {
+  harness: HarnessId;
+  advice: string;
+}
+
 export interface ProjectInfo {
   detectedTypes: string[];
   isMonorepo: boolean;
@@ -20,6 +35,9 @@ export interface ProjectInfo {
     knowledge: string[];
   }>;
   knowledge: string[];
+  // Optional so reports from older CLI versions still render.
+  harnesses?: HarnessId[];
+  harnessSource?: "config" | "detected" | "default";
 }
 
 export interface CriterionResult {
@@ -68,6 +86,8 @@ export interface Recommendation {
   title: string;
   description: string;
   reason: string;
+  harnessAdvice?: HarnessAdvice[];
+  explore?: string[];
   effort: "low" | "medium" | "high";
   impact: "high" | "medium" | "low";
   pillarId: string;
@@ -83,6 +103,16 @@ export interface ReportData {
   levelResult: LevelResult;
   pillarScores: PillarScore[];
   recommendations: Recommendation[];
+  considerations?: Consideration[];
+}
+
+export interface Consideration {
+  id: string;
+  title: string;
+  signal: string;
+  description: string;
+  harnessAdvice?: HarnessAdvice[];
+  explore?: string[];
 }
 
 declare global {

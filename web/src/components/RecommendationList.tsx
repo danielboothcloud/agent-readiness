@@ -1,4 +1,7 @@
-import type { Recommendation, SerializedPillar } from "../types";
+import { HARNESS_LABELS, type Recommendation, type SerializedPillar } from "../types";
+import HarnessAdviceList from "./HarnessAdviceList";
+
+const TOP_RECOMMENDATIONS = 10;
 
 interface Props {
   recommendations: Recommendation[];
@@ -37,7 +40,7 @@ export default function RecommendationList({ recommendations, pillars }: Props) 
         Top Recommendations
       </h2>
       <div className="space-y-3">
-        {recommendations.map((rec, i) => {
+        {recommendations.slice(0, TOP_RECOMMENDATIONS).map((rec, i) => {
           const pillar = pillars.find((p) => p.id === rec.pillarId);
           const pillarName = pillar?.name ?? rec.pillarId;
 
@@ -73,6 +76,7 @@ export default function RecommendationList({ recommendations, pillars }: Props) 
                   {rec.reason && (
                     <p className="text-xs text-gray-500 mt-1">{rec.reason}</p>
                   )}
+                  <HarnessAdviceList advice={rec.harnessAdvice} labels={HARNESS_LABELS} />
                 </div>
               </div>
             </div>

@@ -10,12 +10,37 @@ export const LEVEL_LABELS: Record<MaturityLevel, string> = {
 
 export const LEVEL_THRESHOLD = 0.8;
 
+/** Coding-agent harnesses the repo can target. pi is the primary/default. */
+export type HarnessId = "pi" | "claude" | "codex" | "cursor" | "gemini";
+
+export const HARNESS_IDS: HarnessId[] = [
+  "pi",
+  "claude",
+  "codex",
+  "cursor",
+  "gemini",
+];
+
+export const HARNESS_LABELS: Record<HarnessId, string> = {
+  pi: "pi",
+  claude: "Claude Code",
+  codex: "Codex",
+  cursor: "Cursor",
+  gemini: "Gemini CLI",
+};
+
+/** How the harness list was decided: `.agent-profile.yml`, repo files, or fallback. */
+export type HarnessSource = "config" | "detected" | "default";
+
 export interface ProjectInfo {
   detectedTypes: string[];
   isMonorepo: boolean;
   packages: string[];
   workspaces: ProjectWorkspaceInfo[];
   knowledge: string[];
+  /** Harnesses advice is tailored to (scoring stays harness-agnostic). */
+  harnesses: HarnessId[];
+  harnessSource: HarnessSource;
 }
 
 export interface ProjectWorkspaceInfo {
@@ -75,10 +100,19 @@ export interface LevelResult {
   };
 }
 
+export interface HarnessAdvice {
+  harness: HarnessId;
+  advice: string;
+}
+
 export interface Recommendation {
   title: string;
   description: string;
   reason: string;
+  /** Example starting points per targeted harness (pi first) — not the only answer. */
+  harnessAdvice?: HarnessAdvice[];
+  /** Questions that lead the user to the option that fits their repo. */
+  explore?: string[];
   effort: "low" | "medium" | "high";
   impact: "high" | "medium" | "low";
   pillarId: string;
@@ -94,6 +128,22 @@ export interface ReportData {
   levelResult: LevelResult;
   pillarScores: PillarScore[];
   recommendations: Recommendation[];
+  considerations: Consideration[];
+}
+
+/**
+ * Unscored, signal-driven suggestion (e.g. "this repo has Terraform — consider a
+ * pi skill that wraps plan/validate"). Never affects the level or pillar scores.
+ */
+export interface Consideration {
+  id: string;
+  title: string;
+  /** What in the repo triggered this suggestion. */
+  signal: string;
+  description: string;
+  harnessAdvice?: HarnessAdvice[];
+  /** Questions that lead the user to the option that fits their repo. */
+  explore?: string[];
 }
 
 export interface Config {
@@ -101,6 +151,8 @@ export interface Config {
   criteria?: Record<string, boolean>;
   workspaces?: ConfigWorkspace[];
   knowledge?: string | string[];
+  /** Harnesses to tailor advice to; overrides detection. */
+  harnesses?: HarnessId[];
   thresholds?: Record<string, number>;
   aiEnabled?: boolean;
   apiKey?: string;

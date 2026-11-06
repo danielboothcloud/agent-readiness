@@ -2,7 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import fg from "fast-glob";
 import YAML from "yaml";
-import type { Config, ProjectInfo, ProjectWorkspaceInfo } from "../types/index.js";
+import type {
+  Config,
+  ProjectInfo,
+  ProjectWorkspaceInfo,
+} from "../types/index.js";
+import { detectHarnesses } from "./harness.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -81,7 +86,12 @@ async function detectTypes(repoPath: string): Promise<string[]> {
     for (const file of indicator.files) {
       if (file.includes("*")) {
         // Use glob for patterns with wildcards
-        const matches = await fg(file, { cwd: repoPath, absolute: false, onlyFiles: true, deep: 1 });
+        const matches = await fg(file, {
+          cwd: repoPath,
+          absolute: false,
+          onlyFiles: true,
+          deep: 1,
+        });
         if (matches.length > 0) {
           if (!detected.includes(indicator.type)) {
             detected.push(indicator.type);
@@ -126,10 +136,13 @@ async function detectTypes(repoPath: string): Promise<string[]> {
 
     // Check pom.xml for kotlin-maven-plugin
     const pomXml = path.join(repoPath, "pom.xml");
-    if (!detected.includes("kotlin") && await fileExists(pomXml)) {
+    if (!detected.includes("kotlin") && (await fileExists(pomXml))) {
       try {
         const content = await fs.readFile(pomXml, "utf-8");
-        if (content.includes("kotlin-maven-plugin") || content.includes("org.jetbrains.kotlin")) {
+        if (
+          content.includes("kotlin-maven-plugin") ||
+          content.includes("org.jetbrains.kotlin")
+        ) {
           detected.push("kotlin");
         }
       } catch {
@@ -145,15 +158,17 @@ async function detectJavaScriptTypeScriptEcosystem(
   repoPath: string,
   detected: string[],
 ): Promise<void> {
-  const packageJson = await readJsonFile<PackageJson>(path.join(repoPath, "package.json"));
+  const packageJson = await readJsonFile<PackageJson>(
+    path.join(repoPath, "package.json"),
+  );
   const hasJsTsSignal =
     Boolean(packageJson) ||
-    await fileExists(path.join(repoPath, "tsconfig.json")) ||
-    await fileExists(path.join(repoPath, "jsconfig.json")) ||
-    await fileExists(path.join(repoPath, "deno.json")) ||
-    await fileExists(path.join(repoPath, "deno.jsonc")) ||
-    await fileExists(path.join(repoPath, "bun.lock")) ||
-    await fileExists(path.join(repoPath, "bun.lockb"));
+    (await fileExists(path.join(repoPath, "tsconfig.json"))) ||
+    (await fileExists(path.join(repoPath, "jsconfig.json"))) ||
+    (await fileExists(path.join(repoPath, "deno.json"))) ||
+    (await fileExists(path.join(repoPath, "deno.jsonc"))) ||
+    (await fileExists(path.join(repoPath, "bun.lock"))) ||
+    (await fileExists(path.join(repoPath, "bun.lockb")));
   if (!hasJsTsSignal) return;
 
   const deps = {
@@ -165,31 +180,32 @@ async function detectJavaScriptTypeScriptEcosystem(
   const depNames = Object.keys(deps);
 
   if (
-    await fileExists(path.join(repoPath, "tsconfig.json")) ||
-    await fileExists(path.join(repoPath, "deno.json")) ||
-    await fileExists(path.join(repoPath, "deno.jsonc")) ||
+    (await fileExists(path.join(repoPath, "tsconfig.json"))) ||
+    (await fileExists(path.join(repoPath, "deno.json"))) ||
+    (await fileExists(path.join(repoPath, "deno.jsonc"))) ||
     depNames.includes("typescript") ||
-    (await fg(["**/*.{ts,tsx}", "!node_modules/**", "!dist/**", "!build/**"], {
-      cwd: repoPath,
-      absolute: false,
-      onlyFiles: true,
-      deep: 4,
-    })).length > 0
+    (
+      await fg(["**/*.{ts,tsx}", "!node_modules/**", "!dist/**", "!build/**"], {
+        cwd: repoPath,
+        absolute: false,
+        onlyFiles: true,
+        deep: 4,
+      })
+    ).length > 0
   ) {
     addDetected(detected, "typescript");
   }
 
   if (
-    depNames.some((dep) => dep === "@nestjs/core" || dep.startsWith("@nestjs/")) ||
-    await fileExists(path.join(repoPath, "nest-cli.json"))
+    depNames.some(
+      (dep) => dep === "@nestjs/core" || dep.startsWith("@nestjs/"),
+    ) ||
+    (await fileExists(path.join(repoPath, "nest-cli.json")))
   ) {
     addDetected(detected, "nestjs");
   }
 
-  if (
-    depNames.includes("hono") ||
-    await hasHonoImport(repoPath)
-  ) {
+  if (depNames.includes("hono") || (await hasHonoImport(repoPath))) {
     addDetected(detected, "hono");
   }
 
@@ -205,25 +221,30 @@ async function detectJavaScriptTypeScriptEcosystem(
 
   if (
     packageJson?.packageManager?.startsWith("bun@") ||
-    await fileExists(path.join(repoPath, "bun.lock")) ||
-    await fileExists(path.join(repoPath, "bun.lockb"))
+    (await fileExists(path.join(repoPath, "bun.lock"))) ||
+    (await fileExists(path.join(repoPath, "bun.lockb")))
   ) {
     addDetected(detected, "bun");
   }
 
   if (
     packageJson?.packageManager?.startsWith("deno@") ||
-    await fileExists(path.join(repoPath, "deno.json")) ||
-    await fileExists(path.join(repoPath, "deno.jsonc")) ||
-    await fileExists(path.join(repoPath, "deno.lock"))
+    (await fileExists(path.join(repoPath, "deno.json"))) ||
+    (await fileExists(path.join(repoPath, "deno.jsonc"))) ||
+    (await fileExists(path.join(repoPath, "deno.lock")))
   ) {
     addDetected(detected, "deno");
   }
 }
 
-async function detectPythonEcosystem(repoPath: string, detected: string[]): Promise<void> {
+async function detectPythonEcosystem(
+  repoPath: string,
+  detected: string[],
+): Promise<void> {
   const pyproject = await readTextFile(path.join(repoPath, "pyproject.toml"));
-  const requirements = await readTextFile(path.join(repoPath, "requirements.txt"));
+  const requirements = await readTextFile(
+    path.join(repoPath, "requirements.txt"),
+  );
   const setupPy = await readTextFile(path.join(repoPath, "setup.py"));
   const content = `${pyproject}\n${requirements}\n${setupPy}`.toLowerCase();
   if (!content.trim()) return;
@@ -236,84 +257,130 @@ async function detectPythonEcosystem(repoPath: string, detected: string[]): Prom
   if (content.includes("ruff")) addDetected(detected, "ruff");
   if (content.includes("mypy")) addDetected(detected, "mypy");
   if (content.includes("pyright")) addDetected(detected, "pyright");
-  if (await fileExists(path.join(repoPath, "uv.lock"))) addDetected(detected, "uv");
-  if (await fileExists(path.join(repoPath, "poetry.lock"))) addDetected(detected, "poetry");
+  if (await fileExists(path.join(repoPath, "uv.lock")))
+    addDetected(detected, "uv");
+  if (await fileExists(path.join(repoPath, "poetry.lock")))
+    addDetected(detected, "poetry");
 }
 
-async function detectGoEcosystem(repoPath: string, detected: string[]): Promise<void> {
+async function detectGoEcosystem(
+  repoPath: string,
+  detected: string[],
+): Promise<void> {
   const goMod = await readTextFile(path.join(repoPath, "go.mod"));
   if (!goMod) return;
 
   if (goMod.includes("github.com/gin-gonic/gin")) addDetected(detected, "gin");
   if (goMod.includes("github.com/labstack/echo")) addDetected(detected, "echo");
   if (goMod.includes("github.com/go-chi/chi")) addDetected(detected, "chi");
-  if (goMod.includes("github.com/gofiber/fiber")) addDetected(detected, "fiber");
+  if (goMod.includes("github.com/gofiber/fiber"))
+    addDetected(detected, "fiber");
   if (goMod.includes("google.golang.org/grpc")) addDetected(detected, "grpc");
 }
 
-async function detectJvmEcosystem(repoPath: string, detected: string[]): Promise<void> {
+async function detectJvmEcosystem(
+  repoPath: string,
+  detected: string[],
+): Promise<void> {
   const buildGradle = await readTextFile(path.join(repoPath, "build.gradle"));
-  const buildGradleKts = await readTextFile(path.join(repoPath, "build.gradle.kts"));
+  const buildGradleKts = await readTextFile(
+    path.join(repoPath, "build.gradle.kts"),
+  );
   const pomXml = await readTextFile(path.join(repoPath, "pom.xml"));
   const content = `${buildGradle}\n${buildGradleKts}\n${pomXml}`.toLowerCase();
   if (!content.trim()) return;
 
-  if (content.includes("spring-boot") || content.includes("springframework.boot")) {
+  if (
+    content.includes("spring-boot") ||
+    content.includes("springframework.boot")
+  ) {
     addDetected(detected, "spring-boot");
   }
   if (content.includes("quarkus")) addDetected(detected, "quarkus");
   if (content.includes("micronaut")) addDetected(detected, "micronaut");
-  if (await fileExists(path.join(repoPath, "gradlew")) || buildGradle || buildGradleKts) {
+  if (
+    (await fileExists(path.join(repoPath, "gradlew"))) ||
+    buildGradle ||
+    buildGradleKts
+  ) {
     addDetected(detected, "gradle");
   }
-  if (await fileExists(path.join(repoPath, "mvnw")) || pomXml) addDetected(detected, "maven");
+  if ((await fileExists(path.join(repoPath, "mvnw"))) || pomXml)
+    addDetected(detected, "maven");
 }
 
-async function detectDotnetEcosystem(repoPath: string, detected: string[]): Promise<void> {
+async function detectDotnetEcosystem(
+  repoPath: string,
+  detected: string[],
+): Promise<void> {
   const csprojMatches = await fg("*.csproj", {
     cwd: repoPath,
     absolute: false,
     onlyFiles: true,
     deep: 1,
   });
-  if (csprojMatches.length === 0 && !(await fileExists(path.join(repoPath, "global.json")))) return;
+  if (
+    csprojMatches.length === 0 &&
+    !(await fileExists(path.join(repoPath, "global.json")))
+  )
+    return;
 
   addDetected(detected, "dotnet");
   for (const csproj of csprojMatches) {
-    const content = (await readTextFile(path.join(repoPath, csproj))).toLowerCase();
-    if (content.includes("microsoft.net.sdk.web")) addDetected(detected, "aspnetcore");
+    const content = (
+      await readTextFile(path.join(repoPath, csproj))
+    ).toLowerCase();
+    if (content.includes("microsoft.net.sdk.web"))
+      addDetected(detected, "aspnetcore");
     if (content.includes("xunit")) addDetected(detected, "xunit");
     if (content.includes("nunit")) addDetected(detected, "nunit");
   }
 }
 
-async function detectInfrastructureEcosystem(repoPath: string, detected: string[]): Promise<void> {
-  if ((await fg("*.tf", { cwd: repoPath, absolute: false, onlyFiles: true, deep: 2 })).length > 0) {
+async function detectInfrastructureEcosystem(
+  repoPath: string,
+  detected: string[],
+): Promise<void> {
+  if (
+    (
+      await fg("*.tf", {
+        cwd: repoPath,
+        absolute: false,
+        onlyFiles: true,
+        deep: 2,
+      })
+    ).length > 0
+  ) {
     addDetected(detected, "terraform");
   }
   if (
-    await fileExists(path.join(repoPath, "Chart.yaml")) ||
-    await fileExists(path.join(repoPath, "helmfile.yaml")) ||
-    await fileExists(path.join(repoPath, "helmfile.yml"))
+    (await fileExists(path.join(repoPath, "Chart.yaml"))) ||
+    (await fileExists(path.join(repoPath, "helmfile.yaml"))) ||
+    (await fileExists(path.join(repoPath, "helmfile.yml")))
   ) {
     addDetected(detected, "helm");
   }
   if (
-    await fileExists(path.join(repoPath, "kustomization.yaml")) ||
-    await fileExists(path.join(repoPath, "kustomization.yml")) ||
-    (await fg(["k8s/**/*.y{a,}ml", "deploy/**/*.y{a,}ml", "manifests/**/*.y{a,}ml"], {
-      cwd: repoPath,
-      absolute: false,
-      onlyFiles: true,
-      deep: 4,
-    })).length > 0
+    (await fileExists(path.join(repoPath, "kustomization.yaml"))) ||
+    (await fileExists(path.join(repoPath, "kustomization.yml"))) ||
+    (
+      await fg(
+        ["k8s/**/*.y{a,}ml", "deploy/**/*.y{a,}ml", "manifests/**/*.y{a,}ml"],
+        {
+          cwd: repoPath,
+          absolute: false,
+          onlyFiles: true,
+          deep: 4,
+        },
+      )
+    ).length > 0
   ) {
     addDetected(detected, "kubernetes");
   }
   if (
-    await fileExists(path.join(repoPath, "Dockerfile")) ||
-    await fileExists(path.join(repoPath, "docker-compose.yml")) ||
-    await fileExists(path.join(repoPath, "docker-compose.yaml"))
+    (await fileExists(path.join(repoPath, "Dockerfile"))) ||
+    (await fileExists(path.join(repoPath, "docker-compose.yml"))) ||
+    (await fileExists(path.join(repoPath, "docker-compose.yaml")))
   ) {
     addDetected(detected, "docker");
   }
@@ -341,7 +408,10 @@ async function hasHonoImport(repoPath: string): Promise<boolean> {
 
   for (const candidate of candidates.slice(0, 25)) {
     try {
-      const content = await fs.readFile(path.join(repoPath, candidate), "utf-8");
+      const content = await fs.readFile(
+        path.join(repoPath, candidate),
+        "utf-8",
+      );
       if (/from\s+["']hono["']|require\(["']hono["']\)/.test(content)) {
         return true;
       }
@@ -411,7 +481,7 @@ async function detectMonorepo(repoPath: string): Promise<MonorepoResult> {
   if (pkgJson?.workspaces) {
     const patterns = Array.isArray(pkgJson.workspaces)
       ? pkgJson.workspaces
-      : pkgJson.workspaces.packages ?? [];
+      : (pkgJson.workspaces.packages ?? []);
 
     if (patterns.length > 0) {
       const packages = await resolveWorkspaceGlobs(repoPath, patterns);
@@ -519,17 +589,20 @@ async function detectConfiguredWorkspaces(
 
 export async function detectProject(
   repoPath: string,
-  config: Pick<Config, "workspaces" | "knowledge"> = {},
+  config: Pick<Config, "workspaces" | "knowledge" | "harnesses"> = {},
 ): Promise<ProjectInfo> {
   const absolutePath = path.resolve(repoPath);
 
-  const [rootTypes, monorepo, workspaces] = await Promise.all([
+  const [rootTypes, monorepo, workspaces, harnessProfile] = await Promise.all([
     detectTypes(absolutePath),
     detectMonorepo(absolutePath),
     detectConfiguredWorkspaces(absolutePath, config),
+    detectHarnesses(absolutePath, config.harnesses),
   ]);
 
-  const workspaceTypes = workspaces.flatMap((workspace) => workspace.detectedTypes);
+  const workspaceTypes = workspaces.flatMap(
+    (workspace) => workspace.detectedTypes,
+  );
   const workspacePaths = workspaces.map((workspace) => workspace.path);
 
   return {
@@ -538,5 +611,6 @@ export async function detectProject(
     packages: unique([...monorepo.packages, ...workspacePaths]),
     workspaces,
     knowledge: asArray(config.knowledge),
+    ...harnessProfile,
   };
 }

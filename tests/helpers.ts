@@ -4,7 +4,10 @@ import path from "node:path";
 import type { ProjectInfo, Pillar } from "../src/types/index.js";
 
 export async function createTestDir(name: string): Promise<string> {
-  const dir = path.join(os.tmpdir(), `agent-readiness-test-${name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const dir = path.join(
+    os.tmpdir(),
+    `agent-readiness-test-${name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  );
   await fs.mkdir(dir, { recursive: true });
   return dir;
 }
@@ -31,6 +34,8 @@ export function mockProjectInfo(overrides?: Partial<ProjectInfo>): ProjectInfo {
     packages: [],
     workspaces: [],
     knowledge: [],
+    harnesses: ["pi"],
+    harnessSource: "default",
     ...overrides,
   };
 }
@@ -38,7 +43,9 @@ export function mockProjectInfo(overrides?: Partial<ProjectInfo>): ProjectInfo {
 export function getCheck(pillar: Pillar, criterionId: string) {
   const criterion = pillar.criteria.find((c) => c.id === criterionId);
   if (!criterion) {
-    throw new Error(`Criterion "${criterionId}" not found in pillar "${pillar.id}"`);
+    throw new Error(
+      `Criterion "${criterionId}" not found in pillar "${pillar.id}"`,
+    );
   }
   return criterion.check;
 }

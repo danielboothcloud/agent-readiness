@@ -230,6 +230,12 @@ pillars:
   ci-cd: true
   code-health: true
   security: true
+  architecture: true
+  context: true
+
+# Tailor advice to these harnesses (pi, claude, codex, cursor, gemini).
+# Default: detected from committed files, falling back to pi.
+harnesses: [pi]
 
 # Fine-grained toggles for individual criteria
 criteria:
@@ -254,7 +260,6 @@ criteria:
   contributing: true
   api-docs: true
   codeowners: true
-  ai-context: true
   architecture-docs: true
   readme-quality: true
   docs-agent-friendliness: true
@@ -285,6 +290,18 @@ criteria:
   secrets-detection: true
   security-policy: true
   dep-update-automation: true
+
+  # Architecture & Methodology
+  methodology-documented: true
+  boundary-enforcement: true
+  agent-harness-rules: true
+
+  # Agent Context & Capabilities
+  ai-context-file: true
+  mcp-servers: true
+  agent-skills: true
+  agent-guardrails: true
+  agent-edit-feedback: true
 
 # Thresholds
 thresholds:
@@ -378,6 +395,17 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 
 ---
 
+## Harness-Aware Advice & Considerations
+
+Scoring is harness-agnostic: a guardrail counts whether it is a pi-warden config, a Claude Code `permissions.deny`, or a Cursor hook. The **advice** is tailored to the harnesses the repo targets, with pi first:
+
+- **Harness detection**: from committed files (`.pi/`, `pi-warden.md`, `.pi-lens.json` → pi; `.claude/`, `CLAUDE.md` → Claude Code; `.codex/`; `.cursor/`; `.gemini/`). Falls back to pi. Override with `harnesses: [pi, claude]` in `.agent-profile.yml`.
+- **Recommendations** for the agent criteria include per-harness how-to. For pi that means pi-lens for in-edit feedback, pi-warden for enforced rules and guardrails, and `pi install -l` / `.pi/prompts` / `.agents/skills` / `.pi/extensions` for packages. Claude Code, Codex, Cursor and Gemini CLI get their equivalents.
+- **Considerations** are unscored suggestions triggered by evidence in the repo, which they quote in a `Signal:` line. Examples: publish/deploy tasks that should be held, AGENTS.md "never/don't" lines to promote into `pi-warden.md` rules, enabled pi-lens with no project rules, many task commands that could become a custom pi package, Terraform/Helm/DB-migration/API-contract workflows, unmarked generated code, monorepo packages missing AGENTS.md, and oversized context files. They appear in the terminal report, `--checklist`, JSON (`considerations`), and the dashboard.
+- **The checklist is a living document.** A bare `--checklist` writes `agent-readiness-checklist.md` into the scanned repo so it can be committed and kept. Every pillar opens with *Why this matters* and questions for the area, and **every** criterion, whether passing, failing or skipped, keeps its status, why it matters, the goal, *Ask yourself* questions and example *starting points* (tools such as pi-lens and pi-warden are examples, not prescriptions). A ticked box means the basics are detected, not that the question is settled. The file ends with **Find what fits this repo**: self-check questions that each point to a kind of capability, and *where to look* before building your own (the pi package gallery at https://pi.dev/packages, `npm search keywords:pi-package`, trial installs with `pi install -l`, and the MCP registry). Regenerate to refresh the status.
+
+---
+
 ## All Checks
 
 **45 checks** across **9 pillars**, covering **10+ languages** (Node.js, Python, Go, Rust, Java, Kotlin, C#, Ruby, PHP, Swift). 4 checks use optional AI analysis for deeper evaluation.
@@ -415,7 +443,6 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 | `contributing` | 2 | No | CONTRIBUTING.md |
 | `api-docs` | 3 | No | OpenAPI/Swagger specs, JSDoc/TypeDoc config |
 | `codeowners` | 3 | No | CODEOWNERS file |
-| `ai-context` | 3 | No | CLAUDE.md, .cursorrules, copilot-instructions.md |
 | `architecture-docs` | 4 | No | Architecture docs, ADRs |
 | `readme-quality` | 5 | Yes | README effectiveness and completeness |
 | `docs-agent-friendliness` | 5 | Yes | Whether docs help AI agents understand the codebase |
@@ -465,16 +492,17 @@ Without `--ai`, AI-powered criteria are **skipped** (not counted as failures).
 |---|---|---|---|
 | `methodology-documented` | 2 | No | Declared code-organisation methodology (ARCHITECTURE.md, docs/agent-readiness.md, ADRs) |
 | `boundary-enforcement` | 3 | No | import-linter, dependency-cruiser, eslint-plugin-boundaries, go-arch-lint, depguard, ArchUnit, tflint |
-| `agent-harness-rules` | 3 | No | Agent rules files mirroring CI structure rules: `.pi/readiness.rules.json`, `pi-warden.md` |
+| `agent-harness-rules` | 3 | No | Enforced agent rules files: `pi-warden.md` (pi-warden judges every write against it), `.pi/readiness.rules.json` |
 
 ### 🧠 Agent Context & Capabilities
 
 | Criterion | Level | AI | What It Detects |
 |---|---|---|---|
 | `ai-context-file` | 2 | No | CLAUDE.md, AGENTS.md, GEMINI.md, .cursorrules, .cursor/rules, copilot-instructions.md, project-context.md |
-| `mcp-servers` | 3 | No | `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `mcpServers` in settings |
-| `agent-skills` | 3 | No | `.claude/skills`, `.agents/skills`, `.claude/commands`, `.cursor/commands`, pi packages/extensions |
-| `agent-guardrails` | 3 | No | Committed agent hooks/permissions: `hooks` or `permissions.deny/ask` in `.claude/settings.json`, `.cursor/hooks.json`, `.codex/hooks.json` / `[hooks]` in `.codex/config.toml`, `hooks` in `.gemini/settings.json`, pi `.pi/hook/hooks.yaml`, `.pi/aio-blocklist.json`, `.pi/pi-warden.json`, blocking `.pi/extensions` (`tool_call` → `block: true`). User-level configs don't count. |
+| `mcp-servers` | 3 | No | pi `.pi/mcp.json`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `.gemini/settings.json`, `mcpServers` in settings |
+| `agent-skills` | 3 | No | pi: packages in `.pi/settings.json` (`pi install -l`), `.pi/extensions`, `.pi/skills`, `.pi/prompts`; `.agents/skills`; `.claude/skills\|commands\|agents`, `.cursor/commands`, `.gemini/commands` |
+| `agent-guardrails` | 3 | No | Committed agent hooks/permissions: `hooks` or `permissions.deny/ask` in `.claude/settings.json`, `.cursor/hooks.json`, `.codex/hooks.json` / `[hooks]` in `.codex/config.toml`, `hooks` in `.gemini/settings.json`, pi `.pi/hook/hooks.yaml`, `.pi/aio-blocklist.json`, `.pi/pi-warden.json`, pi-warden as a project package, blocking `.pi/extensions` (`tool_call` → `block: true`). User-level configs don't count. |
+| `agent-edit-feedback` | 3 | No | Per-edit diagnostics for agents: pi-lens (`.pi-lens.json`, project rules in `rules/ast-grep-rules/rules/` or `rules/tree-sitter-queries/`, or pi-lens as a project package); post-edit hooks (`PostToolUse` in `.claude/settings.json` / Codex, `afterFileEdit` in `.cursor/hooks.json`, `AfterTool` in `.gemini/settings.json`) |
 
 </details>
 

@@ -9,6 +9,7 @@ import { detectProject } from "../engine/detector.js";
 import { AnalysisEngine } from "../engine/analyzer.js";
 import { calculatePillarScores, calculateLevel } from "../engine/scorer.js";
 import { generateRecommendations } from "../engine/recommender.js";
+import { generateConsiderations } from "../engine/considerations.js";
 import { ALL_PILLARS } from "../pillars/index.js";
 import { renderReport } from "../renderer/index.js";
 import {
@@ -146,7 +147,12 @@ async function main(options: CLIOptions): Promise<void> {
       results,
       pillarScores,
       levelResult,
+      projectInfo.harnesses,
     );
+
+    // k2. Unscored, signal-driven suggestions (custom packages, guards, rules)
+    spinner.text = "Looking for considerations...";
+    const considerations = await generateConsiderations(repoPath, projectInfo);
 
     // l. Stop spinner
     spinner.stop();
@@ -161,6 +167,7 @@ async function main(options: CLIOptions): Promise<void> {
       levelResult,
       pillarScores,
       recommendations,
+      considerations,
     };
 
     // n-o. Output report
@@ -173,7 +180,12 @@ async function main(options: CLIOptions): Promise<void> {
 
     // Write checklist file if requested
     if (options.checklist) {
-      const checklistPath = path.resolve(options.checklist);
+      // A bare --checklist writes into the scanned repo so it can be committed
+      // and kept as a living document; an explicit path resolves from cwd.
+      const checklistPath =
+        options.checklist === DEFAULT_CHECKLIST_FILENAME
+          ? path.join(repoPath, DEFAULT_CHECKLIST_FILENAME)
+          : path.resolve(options.checklist);
       const checklist = renderChecklist(
         reportData,
         checklistFormatFromPath(checklistPath),
@@ -246,7 +258,7 @@ export function run(): void {
     .option("--no-web", "Disable the web dashboard")
     .option(
       "--checklist [file]",
-      `Write a checklist file (.md or .txt; default ${DEFAULT_CHECKLIST_FILENAME})`,
+      `Write a checklist file to keep in the repo (.md or .txt; default <repo>/${DEFAULT_CHECKLIST_FILENAME})`,
     )
     .action(async (pathArg: string, opts: Record<string, unknown>) => {
       const cliOptions: CLIOptions = {

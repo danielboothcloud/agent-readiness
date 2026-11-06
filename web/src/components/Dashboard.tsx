@@ -4,6 +4,7 @@ import OverallProgress from "./OverallProgress";
 import RadarChart from "./RadarChart";
 import PillarCard from "./PillarCard";
 import RecommendationList from "./RecommendationList";
+import ConsiderationList from "./ConsiderationList";
 
 interface Props {
   data: ReportData;
@@ -83,6 +84,8 @@ export default function Dashboard({ data }: Props) {
         recommendations={data.recommendations}
         pillars={data.pillars}
       />
+
+      <ConsiderationList considerations={data.considerations} />
 
       {/* Footer */}
       <div className="text-center py-6 border-t border-surface-border">

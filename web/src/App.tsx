@@ -10,6 +10,8 @@ const MOCK_DATA: ReportData = {
     packages: [],
     workspaces: [],
     knowledge: [],
+    harnesses: ["pi", "claude"],
+    harnessSource: "detected",
   },
   pillars: [
     {
@@ -58,6 +60,20 @@ const MOCK_DATA: ReportData = {
       impact: "high",
       pillarId: "style-linting",
       criterionId: "formatter",
+      harnessAdvice: [
+        { harness: "pi", advice: "`pi install -l npm:pi-lens` formats and lints after every write" },
+      ],
+    },
+  ],
+  considerations: [
+    {
+      id: "guard-destructive-tasks",
+      title: "Hold publish / deploy / destructive tasks",
+      signal: "Irreversible tasks: publish (mise.toml)",
+      description: "These tasks publish, deploy or delete, so they should need a human yes.",
+      harnessAdvice: [
+        { harness: "pi", advice: "pi-warden holds irreversible commands (`pi install -l npm:pi-warden`)" },
+      ],
     },
   ],
 };

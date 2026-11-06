@@ -176,7 +176,7 @@ const architecture: Pillar = {
           pass: false,
           message: "No agent harness enforcement rules found.",
           details:
-            "Add .pi/readiness.rules.json or a pi-warden.md (or your harness's equivalent) so coding agents get the same block-paths and feedback loop that CI enforces.",
+            "pi: install pi-warden (`pi install -l npm:pi-warden`), run `/warden init` to write a starter pi-warden.md, and turn your AGENTS.md gotchas into `#` rules (every write is judged against them); or add .pi/readiness.rules.json. Claude Code can share the same pi-warden.md via `pi-warden init claude --project`.",
         };
       },
     },

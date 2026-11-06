@@ -8,7 +8,9 @@ import type {
   Pillar,
   MaturityLevel,
 } from "../types/index.js";
-import { LEVEL_LABELS } from "../types/index.js";
+import { HARNESS_LABELS, LEVEL_LABELS } from "../types/index.js";
+import { TOP_RECOMMENDATIONS } from "../engine/recommender.js";
+import { describeHarnesses } from "./checklist.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -100,6 +102,7 @@ function renderHeader(data: ReportData, ci: boolean): void {
     console.log(
       `Project types: ${types}${data.projectInfo.isMonorepo ? " [monorepo]" : ""}`,
     );
+    console.log(`Harnesses: ${describeHarnesses(data)}`);
     console.log("");
     return;
   }
@@ -119,7 +122,10 @@ function renderHeader(data: ReportData, ci: boolean): void {
           : "")
       : "";
 
-  const content = `${title}\n${subtitle}\n\n${projectLine}${packagesLine}`;
+  const harnessLine =
+    "\n" + chalk.white("Harnesses: ") + chalk.magenta(describeHarnesses(data));
+
+  const content = `${title}\n${subtitle}\n\n${projectLine}${packagesLine}${harnessLine}`;
 
   console.log(
     boxen(content, {
@@ -330,6 +336,7 @@ function renderDetailedBreakdown(data: ReportData, ci: boolean): void {
 
 function renderRecommendations(data: ReportData, ci: boolean): void {
   console.log("");
+  const top = data.recommendations.slice(0, TOP_RECOMMENDATIONS);
 
   if (ci) {
     if (data.recommendations.length === 0) {
@@ -339,7 +346,7 @@ function renderRecommendations(data: ReportData, ci: boolean): void {
       return;
     }
     console.log("--- Top Recommendations ---");
-    data.recommendations.forEach((rec, i) => {
+    top.forEach((rec, i) => {
       const pillar = findPillar(data.pillars, rec.pillarId);
       const pillarName = pillar ? pillar.name : rec.pillarId;
       console.log(
@@ -348,6 +355,9 @@ function renderRecommendations(data: ReportData, ci: boolean): void {
       console.log(`     ${rec.description}`);
       if (rec.reason) {
         console.log(`     Reason: ${rec.reason}`);
+      }
+      for (const a of rec.harnessAdvice ?? []) {
+        console.log(`     ${HARNESS_LABELS[a.harness]}: ${a.advice}`);
       }
     });
     console.log("");
@@ -379,7 +389,7 @@ function renderRecommendations(data: ReportData, ci: boolean): void {
   );
   console.log("");
 
-  data.recommendations.forEach((rec, i) => {
+  top.forEach((rec, i) => {
     const pillar = findPillar(data.pillars, rec.pillarId);
     const pillarName = pillar ? pillar.name : rec.pillarId;
 
@@ -392,6 +402,56 @@ function renderRecommendations(data: ReportData, ci: boolean): void {
     console.log(`     ${chalk.white(rec.description)}`);
     if (rec.reason) {
       console.log(`     ${chalk.dim(rec.reason)}`);
+    }
+    for (const a of rec.harnessAdvice ?? []) {
+      console.log(
+        `     ${chalk.magenta(`${HARNESS_LABELS[a.harness]}:`)} ${chalk.white(a.advice)}`,
+      );
+    }
+    console.log("");
+  });
+
+  const more = data.recommendations.length - top.length;
+  if (more > 0) {
+    console.log(
+      chalk.dim(`  +${more} more — write them all with --checklist`),
+    );
+    console.log("");
+  }
+}
+
+function renderConsiderations(data: ReportData, ci: boolean): void {
+  if (data.considerations.length === 0) return;
+
+  if (ci) {
+    console.log("--- Considerations (not scored) ---");
+    data.considerations.forEach((c, i) => {
+      console.log(`  ${i + 1}. ${c.title}`);
+      console.log(`     Signal: ${c.signal}`);
+      console.log(`     ${c.description}`);
+      for (const a of c.harnessAdvice ?? []) {
+        console.log(`     ${HARNESS_LABELS[a.harness]}: ${a.advice}`);
+      }
+    });
+    console.log("");
+    return;
+  }
+
+  console.log(
+    chalk.bold.white("  +- ") +
+      chalk.bold.magenta("CONSIDERATIONS") +
+      chalk.dim(" (not scored)") +
+      chalk.bold.white(" -".repeat(15)),
+  );
+  console.log("");
+  data.considerations.forEach((c, i) => {
+    console.log(`${chalk.bold.magenta(`  ${i + 1}.`)} ${chalk.bold.white(c.title)}`);
+    console.log(`     ${chalk.dim("Signal:")} ${chalk.cyan(c.signal)}`);
+    console.log(`     ${chalk.white(c.description)}`);
+    for (const a of c.harnessAdvice ?? []) {
+      console.log(
+        `     ${chalk.magenta(`${HARNESS_LABELS[a.harness]}:`)} ${chalk.white(a.advice)}`,
+      );
     }
     console.log("");
   });
@@ -446,5 +506,6 @@ export function renderReport(data: ReportData, options: RenderOptions): void {
   renderPillarSummary(data, ci);
   renderDetailedBreakdown(data, ci);
   renderRecommendations(data, ci);
+  renderConsiderations(data, ci);
   renderFooter(data, ci);
 }

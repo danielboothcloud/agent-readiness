@@ -67,6 +67,8 @@ pillars:
   ci-cd: true
   code-health: true
   security: true
+  architecture: true
+  context: true
 
 # ── Criteria ─────────────────────────────────────────────────
 # Fine-grained toggles for individual criteria within pillars.
@@ -92,7 +94,6 @@ criteria:
   contributing: true
   api-docs: true
   codeowners: true
-  ai-context: true
   architecture-docs: true
 
   # Dev Environment
@@ -121,6 +122,26 @@ criteria:
   secrets-detection: true
   security-policy: true
   dep-update-automation: true
+
+  # Architecture & Methodology
+  methodology-documented: true
+  boundary-enforcement: true
+  agent-harness-rules: true
+
+  # Agent Context & Capabilities
+  ai-context-file: true
+  mcp-servers: true
+  agent-skills: true
+  agent-guardrails: true
+  agent-edit-feedback: true
+
+# ── Harnesses ────────────────────────────────────────────────
+# Coding-agent harnesses to tailor advice to: pi, claude, codex, cursor, gemini.
+# Scoring stays harness-agnostic; this only changes the how-to text in
+# recommendations and considerations (e.g. pi-lens / pi-warden / pi packages
+# for pi). When unset, harnesses are detected from committed files (.pi/,
+# .claude/, .codex/, .cursor/, .gemini/), falling back to pi.
+# harnesses: [pi]
 
 # ── Workspaces ───────────────────────────────────────────────
 # Declare nested codebases when the repository root is a coordination layer
