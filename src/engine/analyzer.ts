@@ -6,6 +6,7 @@ import type {
   ProjectWorkspaceInfo,
 } from "../types/index.js";
 import path from "node:path";
+import { type CriterionPaths, resolveMappedPaths } from "./paths.js";
 
 export type OnPillarStart = (pillar: Pillar) => void;
 export type OnPillarComplete = (
@@ -18,6 +19,8 @@ export interface AnalysisEngineOptions {
   llmClient?: LLMClient;
   onPillarStart?: OnPillarStart;
   onPillarComplete?: OnPillarComplete;
+  /** Per-criterion directories/files from `paths:` in .agent-profile.yml. */
+  criterionPaths?: CriterionPaths;
 }
 
 export class AnalysisEngine {
@@ -28,6 +31,7 @@ export class AnalysisEngine {
   private llmClient?: LLMClient;
   private onPillarStart?: OnPillarStart;
   private onPillarComplete?: OnPillarComplete;
+  private criterionPaths: CriterionPaths;
 
   constructor(
     pillars: Pillar[],
@@ -42,6 +46,7 @@ export class AnalysisEngine {
     this.llmClient = options?.llmClient;
     this.onPillarStart = options?.onPillarStart;
     this.onPillarComplete = options?.onPillarComplete;
+    this.criterionPaths = options?.criterionPaths ?? {};
   }
 
   async run(): Promise<Map<string, CriterionResult[]>> {
@@ -82,9 +87,7 @@ export class AnalysisEngine {
         this.projectInfo,
         this.llmClient,
       );
-      if (rootResult.pass || this.projectInfo.workspaces.length === 0) {
-        return rootResult;
-      }
+      if (rootResult.pass) return rootResult;
 
       for (const workspace of this.projectInfo.workspaces) {
         const workspaceResult = await criterion.check(
@@ -100,7 +103,7 @@ export class AnalysisEngine {
         }
       }
 
-      return rootResult;
+      return await this.checkMappedPaths(criterion, rootResult);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -110,6 +113,52 @@ export class AnalysisEngine {
         message: `Check failed: ${errorMessage}`,
       };
     }
+  }
+
+  /**
+   * Last resort before failing: the user mapped this criterion to paths in
+   * .agent-profile.yml. A mapped file counts as evidence; a mapped directory
+   * gets the check run inside it.
+   */
+  private async checkMappedPaths(
+    criterion: Pillar["criteria"][number],
+    rootResult: CriterionResult,
+  ): Promise<CriterionResult> {
+    const entries = this.criterionPaths[criterion.id];
+    if (!entries || entries.length === 0) return rootResult;
+
+    const { dirs, files, missing } = await resolveMappedPaths(
+      this.repoPath,
+      entries,
+    );
+
+    if (files.length > 0) {
+      return {
+        criterionId: criterion.id,
+        pass: true,
+        message: `Mapped in .agent-profile.yml: ${files.join(", ")}`,
+      };
+    }
+
+    for (const dir of dirs) {
+      const result = await criterion.check(
+        path.resolve(this.repoPath, dir),
+        { ...this.projectInfo, isMonorepo: false, packages: [], workspaces: [] },
+        this.llmClient,
+      );
+      if (result.pass) {
+        return { ...result, message: `[${dir}] ${result.message}` };
+      }
+    }
+
+    const notes = [
+      dirs.length > 0 ? `checked mapped dirs: ${dirs.join(", ")}` : "",
+      missing.length > 0 ? `mapped paths not found: ${missing.join(", ")}` : "",
+    ].filter(Boolean);
+    return {
+      ...rootResult,
+      message: `${rootResult.message} (paths in .agent-profile.yml — ${notes.join("; ")})`,
+    };
   }
 
   private workspaceProjectInfo(workspace: ProjectWorkspaceInfo): ProjectInfo {

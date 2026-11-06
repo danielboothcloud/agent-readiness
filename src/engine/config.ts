@@ -143,6 +143,19 @@ criteria:
 # .claude/, .codex/, .cursor/, .gemini/), falling back to pi.
 # harnesses: [pi]
 
+# ── Paths ─────────────────────────────────────────────────────
+# Point individual checks at where things actually live in this repo, keyed by
+# criterion ID (see the criteria list above). Paths are repo-relative and may be
+# globs. A directory runs the check inside it (e.g. find the linter config in
+# each service); a file counts as evidence that the check is met. Mapped paths
+# are only consulted when the check fails at the repo root and in workspaces.
+# Use \`workspaces\` instead when a subdirectory should be scanned for ALL checks.
+paths:
+  # linter: services/*                     # each service has its own config
+  # test-framework: [services/*, libs/*]
+  # ci-config: platform/pipelines/main.yml   # non-standard CI location
+  # ai-context-file: docs/agents/AGENTS.md
+
 # ── Workspaces ───────────────────────────────────────────────
 # Declare nested codebases when the repository root is a coordination layer
 # rather than a package root. Each workspace is scanned as an additional root;

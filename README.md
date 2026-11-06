@@ -237,6 +237,12 @@ pillars:
 # Default: detected from committed files, falling back to pi.
 harnesses: [pi]
 
+# Point checks at where things live (criterion ID → repo-relative paths/globs).
+# A directory runs the check inside it; a file counts as evidence.
+paths:
+  linter: services/*
+  ci-config: platform/pipelines/main.yml
+
 # Fine-grained toggles for individual criteria
 criteria:
   # Style & Linting
@@ -403,6 +409,25 @@ Scoring is harness-agnostic: a guardrail counts whether it is a pi-warden config
 - **Recommendations** for the agent criteria include per-harness how-to. For pi that means pi-lens for in-edit feedback, pi-warden for enforced rules and guardrails, and `pi install -l` / `.pi/prompts` / `.agents/skills` / `.pi/extensions` for packages. Claude Code, Codex, Cursor and Gemini CLI get their equivalents.
 - **Considerations** are unscored suggestions triggered by evidence in the repo, which they quote in a `Signal:` line. Examples: publish/deploy tasks that should be held, AGENTS.md "never/don't" lines to promote into `pi-warden.md` rules, enabled pi-lens with no project rules, many task commands that could become a custom pi package, Terraform/Helm/DB-migration/API-contract workflows, unmarked generated code, monorepo packages missing AGENTS.md, and oversized context files. They appear in the terminal report, `--checklist`, JSON (`considerations`), and the dashboard.
 - **The checklist is a living document.** A bare `--checklist` writes `agent-readiness-checklist.md` into the scanned repo so it can be committed and kept. Every pillar opens with *Why this matters* and questions for the area, and **every** criterion, whether passing, failing or skipped, keeps its status, why it matters, the goal, *Ask yourself* questions and example *starting points* (tools such as pi-lens and pi-warden are examples, not prescriptions). A ticked box means the basics are detected, not that the question is settled. The file ends with **Find what fits this repo**: self-check questions that each point to a kind of capability, and *where to look* before building your own (the pi package gallery at https://pi.dev/packages, `npm search keywords:pi-package`, trial installs with `pi install -l`, and the MCP registry). Regenerate to refresh the status.
+
+---
+
+## Non-Standard Layouts
+
+Checks look in the conventional places at the repo root. When your setup lives elsewhere (a monolith with many services, tooling in a subdirectory, CI in a shared platform folder), tell the scanner where to look in `.agent-profile.yml`:
+
+- **`workspaces`**: subdirectories scanned as additional roots for **every** check. A check passes if it passes at the root or in any workspace.
+- **`paths`**: per-check mapping, keyed by criterion ID. Paths are repo-relative and may be globs. A **directory** runs the real check inside it; a **file** counts as evidence the check is met.
+
+```yaml
+paths:
+  linter: services/*                        # each service has its own ESLint/Ruff config
+  test-framework: [services/*, libs/*]
+  ci-config: platform/pipelines/main.yml    # CI defined outside .github/
+  ai-context-file: docs/agents/AGENTS.md
+```
+
+Mapped paths are consulted only when a check fails at the root and in workspaces, and the result says where it was satisfied (e.g. `[services/billing] ESLint configured`). Unknown criterion IDs and paths outside the repo are ignored with a warning.
 
 ---
 

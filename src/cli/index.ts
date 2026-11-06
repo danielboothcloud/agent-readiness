@@ -24,6 +24,7 @@ import {
 } from "../engine/config.js";
 import { createLLMClient } from "../engine/llm-client.js";
 import { serializeReport } from "../engine/serializer.js";
+import { normalizeCriterionPaths } from "../engine/paths.js";
 import { startServer, openBrowser } from "../server/index.js";
 
 /**
@@ -114,6 +115,16 @@ async function main(options: CLIOptions): Promise<void> {
       }));
     }
 
+    // Per-criterion path mapping (`paths:` in .agent-profile.yml)
+    const { paths: criterionPaths, warnings: pathWarnings } =
+      normalizeCriterionPaths(
+        config.paths,
+        ALL_PILLARS.flatMap((p) => p.criteria.map((c) => c.id)),
+      );
+    for (const w of pathWarnings) {
+      console.warn(chalk.yellow(`Warning (.agent-profile.yml): ${w}`));
+    }
+
     // d. Start spinner: "Detecting project type..."
     spinner.start("Detecting project type...");
 
@@ -124,6 +135,7 @@ async function main(options: CLIOptions): Promise<void> {
     const engine = new AnalysisEngine(pillars, repoPath, projectInfo, {
       aiEnabled,
       llmClient,
+      criterionPaths,
       onPillarStart: (pillar) => {
         spinner.text = `Analyzing ${pillar.name}...`;
       },

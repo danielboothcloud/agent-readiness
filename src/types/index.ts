@@ -153,6 +153,11 @@ export interface Config {
   knowledge?: string | string[];
   /** Harnesses to tailor advice to; overrides detection. */
   harnesses?: HarnessId[];
+  /**
+   * Per-criterion paths (repo-relative, globs allowed): a directory runs the
+   * check there, a file counts as evidence. Keyed by criterion ID.
+   */
+  paths?: Record<string, string | string[]>;
   thresholds?: Record<string, number>;
   aiEnabled?: boolean;
   apiKey?: string;
