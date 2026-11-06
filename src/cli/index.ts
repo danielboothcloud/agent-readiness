@@ -5,7 +5,9 @@ import ora from "ora";
 import chalk from "chalk";
 import { version, description } from "../../package.json";
 import type { CLIOptions, Pillar, ReportData } from "../types/index.js";
-import { detectProject } from "../engine/detector.js";
+import { LEVEL_THRESHOLD } from "../types/index.js";
+import { detectProject, discoverSubprojects } from "../engine/detector.js";
+import { detectHarnesses } from "../engine/harness.js";
 import { AnalysisEngine } from "../engine/analyzer.js";
 import { calculatePillarScores, calculateLevel } from "../engine/scorer.js";
 import { generateRecommendations } from "../engine/recommender.js";
@@ -26,6 +28,20 @@ import { createLLMClient } from "../engine/llm-client.js";
 import { serializeReport } from "../engine/serializer.js";
 import { normalizeCriterionPaths } from "../engine/paths.js";
 import { startServer, openBrowser } from "../server/index.js";
+
+/** `thresholds.level-pass` from config, if it's a valid fraction (0–1]. */
+function levelThreshold(thresholds: Record<string, number> | undefined): number {
+  const value = thresholds?.["level-pass"];
+  if (typeof value === "number" && value > 0 && value <= 1) return value;
+  if (value !== undefined) {
+    console.warn(
+      chalk.yellow(
+        `Warning (.agent-profile.yml): thresholds.level-pass must be a number between 0 and 1; using ${LEVEL_THRESHOLD}.`,
+      ),
+    );
+  }
+  return LEVEL_THRESHOLD;
+}
 
 /**
  * Main orchestration function.
@@ -70,8 +86,23 @@ async function main(options: CLIOptions): Promise<void> {
       } catch {
         // File doesn't exist, good to create
       }
-      await fs.writeFile(configPath, generateDefaultConfig(), "utf-8");
+      // Pre-fill with what the scanner would use: detected harnesses, and the
+      // repo root plus every sub-project so all of them are scanned by default.
+      const [subprojects, { harnesses }] = await Promise.all([
+        discoverSubprojects(repoPath),
+        detectHarnesses(repoPath),
+      ]);
+      await fs.writeFile(
+        configPath,
+        generateDefaultConfig({ locations: [".", ...subprojects], harnesses }),
+        "utf-8",
+      );
       console.log(chalk.green(`Created config file: ${configPath}`));
+      console.log(
+        subprojects.length > 0
+          ? `Every check scans the repo root and ${subprojects.length} sub-project(s): ${subprojects.join(", ")}`
+          : "Every check scans the repo root. Edit `paths:` to point checks at sub-folders.",
+      );
       return;
     }
 
@@ -151,7 +182,11 @@ async function main(options: CLIOptions): Promise<void> {
     const pillarScores = calculatePillarScores(pillars, results);
 
     // j. Calculate level result
-    const levelResult = calculateLevel(pillars, results);
+    const levelResult = calculateLevel(
+      pillars,
+      results,
+      levelThreshold(config.thresholds),
+    );
 
     // k. Generate recommendations
     const recommendations = generateRecommendations(

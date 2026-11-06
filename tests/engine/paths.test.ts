@@ -127,18 +127,39 @@ describe("AnalysisEngine with mapped paths", () => {
       linter: ["services/*", "tools/lint"],
     });
     expect(r?.pass).toBe(false);
-    expect(r?.message).toContain("checked mapped dirs: services/api");
-    expect(r?.message).toContain("mapped paths not found: tools/lint");
+    expect(r?.message).toContain("checked: services/api");
+    expect(r?.message).toContain("not found: tools/lint");
   });
 
-  test("root results win and mapped paths are not consulted", async () => {
-    const dir = await make("paths-root", {
+  test("the list is exactly where the check looks: omit `.` to skip the root", async () => {
+    const dir = await make("paths-exact", {
       "eslint.config.js": "export default [];",
+      "services/api/readme.txt": "",
     });
-    const r = await run(dir, only(styleLinting, "linter"), {
-      linter: "missing/",
+    const pillar = only(styleLinting, "linter");
+    expect((await run(dir, pillar, { linter: "services/api" }))?.pass).toBe(false);
+
+    const withRoot = await run(dir, pillar, { linter: [".", "services/api"] });
+    expect(withRoot?.pass).toBe(true);
+    expect(withRoot?.message).not.toMatch(/^\[/); // passed at the root, no prefix
+  });
+
+  test("no entry means the root only, with an unchanged message", async () => {
+    const dir = await make("paths-default", { "services/api/eslint.config.js": "" });
+    const r = await run(dir, only(styleLinting, "linter"), {});
+    expect(r?.pass).toBe(false);
+    expect(r?.message).not.toContain(".agent-profile.yml");
+  });
+
+  test("subfolder checks use that folder's own languages", async () => {
+    const dir = await make("paths-lang", {
+      "package.json": "{}",
+      "services/worker/go.mod": "module worker\n",
+    });
+    const r = await run(dir, only(styleLinting, "type-checker"), {
+      "type-checker": [".", "services/worker"],
     });
     expect(r?.pass).toBe(true);
-    expect(r?.message).not.toContain("mapped");
+    expect(r?.message).toBe("[services/worker] Go has a built-in static type system");
   });
 });

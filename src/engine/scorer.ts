@@ -33,6 +33,7 @@ export function calculatePillarScores(
 export function calculateLevel(
   pillars: Pillar[],
   results: Map<string, CriterionResult[]>,
+  threshold: number = LEVEL_THRESHOLD,
 ): LevelResult {
   // Collect ALL criteria results across all pillars, excluding skipped
   const allCriteria: { level: MaturityLevel; pass: boolean }[] = [];
@@ -85,7 +86,7 @@ export function calculateLevel(
     const passedCount = criteriaAtLevel.filter((c) => c.pass).length;
     const passRate = passedCount / criteriaAtLevel.length;
 
-    if (passRate >= LEVEL_THRESHOLD) {
+    if (passRate >= threshold) {
       lastPassedLevel = lvl;
       highestPassed = lvl;
     } else {
@@ -106,7 +107,7 @@ export function calculateLevel(
     const nextLevelCriteria = byLevel.get(nextLevel)!;
     const totalAtNext = nextLevelCriteria.length;
     current = nextLevelCriteria.filter((c) => c.pass).length;
-    needed = Math.ceil(totalAtNext * LEVEL_THRESHOLD);
+    needed = Math.ceil(totalAtNext * threshold);
     remaining = Math.max(0, needed - current);
   }
 

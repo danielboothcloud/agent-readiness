@@ -79,7 +79,7 @@ const TYPE_INDICATORS: TypeIndicator[] = [
   { type: "swift", files: ["Package.swift"] },
 ];
 
-async function detectTypes(repoPath: string): Promise<string[]> {
+export async function detectTypes(repoPath: string): Promise<string[]> {
   const detected: string[] = [];
 
   for (const indicator of TYPE_INDICATORS) {
@@ -614,3 +614,64 @@ export async function detectProject(
     ...harnessProfile,
   };
 }
+
+// Project manifests that mark a folder as its own sub-project.
+const SUBPROJECT_MANIFESTS = [
+  "package.json",
+  "pyproject.toml",
+  "setup.py",
+  "requirements.txt",
+  "go.mod",
+  "Cargo.toml",
+  "pom.xml",
+  "build.gradle",
+  "build.gradle.kts",
+  "*.csproj",
+  "Gemfile",
+  "composer.json",
+  "Package.swift",
+  "mix.exs",
+  "*.tf",
+];
+
+const SUBPROJECT_IGNORE = [
+  "**/node_modules/**",
+  "**/.git/**",
+  "**/vendor/**",
+  "**/dist/**",
+  "**/build/**",
+  "**/out/**",
+  "**/target/**",
+  "**/.venv/**",
+  "**/venv/**",
+  "**/coverage/**",
+  "**/.next/**",
+  "**/.terraform/**",
+  "**/__fixtures__/**",
+  "**/fixtures/**",
+];
+
+/**
+ * Sub-folders that look like their own project: workspace packages declared by
+ * the repo (pnpm/npm/yarn/Lerna/Nx/Turbo) plus any folder up to three levels
+ * deep holding a project manifest. Used by `--init` to pre-fill `paths:` so a
+ * monolith's services are scanned by default.
+ */
+export async function discoverSubprojects(repoPath: string): Promise<string[]> {
+  const absolutePath = path.resolve(repoPath);
+  const monorepo = await detectMonorepo(absolutePath);
+  const patterns = [1, 2, 3].flatMap((depth) =>
+    SUBPROJECT_MANIFESTS.map((m) => `${"*/".repeat(depth)}${m}`),
+  );
+  const manifests = await fg(patterns, {
+    cwd: absolutePath,
+    dot: false,
+    onlyFiles: true,
+    ignore: SUBPROJECT_IGNORE,
+  });
+  const dirs = manifests.map((f) => path.posix.dirname(f));
+  return unique([...monorepo.packages, ...dirs]).filter(
+    (d) => d !== "." && !d.startsWith(".."),
+  );
+}
+

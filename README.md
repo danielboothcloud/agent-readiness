@@ -237,11 +237,11 @@ pillars:
 # Default: detected from committed files, falling back to pi.
 harnesses: [pi]
 
-# Point checks at where things live (criterion ID → repo-relative paths/globs).
-# A directory runs the check inside it; a file counts as evidence.
+# Where each check looks (criterion ID → folders/files, globs allowed).
+# `.` is the repo root; a folder runs the check there, a file counts as evidence.
 paths:
-  linter: services/*
-  ci-config: platform/pipelines/main.yml
+  linter: [., services/*]
+  ci-config: [platform/pipelines/main.yml]
 
 # Fine-grained toggles for individual criteria
 criteria:
@@ -414,20 +414,24 @@ Scoring is harness-agnostic: a guardrail counts whether it is a pi-warden config
 
 ## Non-Standard Layouts
 
-Checks look in the conventional places at the repo root. When your setup lives elsewhere (a monolith with many services, tooling in a subdirectory, CI in a shared platform folder), tell the scanner where to look in `.agent-profile.yml`:
+Every check has a list of folders it looks in. By default that's just the repo root (`.`). For a monolith with many services, tooling in a sub-folder, or CI in a shared platform folder, set it in `.agent-profile.yml`.
 
-- **`workspaces`**: subdirectories scanned as additional roots for **every** check. A check passes if it passes at the root or in any workspace.
-- **`paths`**: per-check mapping, keyed by criterion ID. Paths are repo-relative and may be globs. A **directory** runs the real check inside it; a **file** counts as evidence the check is met.
+`--init` writes that file with **everything spelled out at the value in use**: every pillar and check switched on, and every check's `paths:` pre-filled with the repo root **plus every sub-project it finds**. Sub-projects are workspace packages and folders up to 3 levels deep with their own `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml`, `*.tf`, …. So everything is scanned by default. Then edit what you see:
 
 ```yaml
 paths:
-  linter: services/*                        # each service has its own ESLint/Ruff config
-  test-framework: [services/*, libs/*]
-  ci-config: platform/pipelines/main.yml    # CI defined outside .github/
-  ai-context-file: docs/agents/AGENTS.md
+  linter: [., services/*]                   # root + every service
+  test-framework: [services/*, libs/*]      # root deliberately left out
+  ci-config: [platform/pipelines/main.yml]  # a file counts as evidence
 ```
 
-Mapped paths are consulted only when a check fails at the root and in workspaces, and the result says where it was satisfied (e.g. `[services/billing] ESLint configured`). Unknown criterion IDs and paths outside the repo are ignored with a warning.
+- **The list is exactly where the check looks.** Keep `.` if the root should count. A check with no entry looks at the root only.
+- A **folder** runs the real check inside it, using that folder's own languages. The check passes if it passes in any listed folder, and the result says where, e.g. `[services/web] Linter configuration found: eslint.config.js`.
+- A **file** counts as evidence the check is met, for setups the scanner can't recognise.
+- **`workspaces`** are extra roots for **every** check, tried after `paths`.
+- Unknown check IDs and paths outside the repo are ignored with a warning. If listed folders don't satisfy a check, the failure says what was checked and what wasn't found.
+
+`--init` won't overwrite an existing file. Delete it and re-run `--init` to regenerate with new checks or newly added sub-projects.
 
 ---
 
